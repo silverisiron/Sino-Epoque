@@ -1,215 +1,37 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
-
-const BASE_MAP_PATH = '/maps/base'
-const MAP_IMAGE_PATH = `${BASE_MAP_PATH}/bmp/provinces.bmp`
-const DEFINITION_PATH = `${BASE_MAP_PATH}/csv/definition.csv`
-const PRESET_INDEX_PATH = '/maps/presets/index.json'
-
-function parseDefinitionCsv(csvText) {
-  const provinceByRgb = new Map()
-  const provinceById = new Map()
-
-  for (const line of csvText.trim().split(/\r?\n/)) {
-    const [id, red, green, blue, type, coastal, terrain, continent] = line.split(';')
-
-    if (!id || red === undefined || green === undefined || blue === undefined) {
-      continue
-    }
-
-    const province = {
-      id,
-      rgb: `${red},${green},${blue}`,
-      red: Number(red),
-      green: Number(green),
-      blue: Number(blue),
-      type,
-      coastal,
-      terrain,
-      continent,
-    }
-
-    provinceByRgb.set(province.rgb, province)
-    provinceById.set(province.id, province)
-  }
-
-  return { provinceByRgb, provinceById }
-}
-
-function hexToRgb(hex) {
-  const normalized = hex.replace('#', '')
-  const value = Number.parseInt(normalized, 16)
-
-  return {
-    red: (value >> 16) & 255,
-    green: (value >> 8) & 255,
-    blue: value & 255,
-  }
-}
-
-function isWater(province) {
-  return province?.type === 'sea' || province?.type === 'lake'
-}
-
-function createBlankMapImageData(sourceImageData, provinceByRgb) {
-  const { width, height, data } = sourceImageData
-  const blankImageData = new ImageData(width, height)
-  const output = blankImageData.data
-
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      const index = (y * width + x) * 4
-      const rgb = `${data[index]},${data[index + 1]},${data[index + 2]}`
-      const province = provinceByRgb.get(rgb)
-      const rightIndex = x < width - 1 ? index + 4 : index
-      const bottomIndex = y < height - 1 ? index + width * 4 : index
-      const rightRgb = `${data[rightIndex]},${data[rightIndex + 1]},${data[rightIndex + 2]}`
-      const bottomRgb = `${data[bottomIndex]},${data[bottomIndex + 1]},${data[bottomIndex + 2]}`
-      const isBorder = rgb !== rightRgb || rgb !== bottomRgb
-
-      if (isBorder) {
-        output[index] = 20
-        output[index + 1] = 20
-        output[index + 2] = 20
-      } else if (isWater(province)) {
-        output[index] = 218
-        output[index + 1] = 233
-        output[index + 2] = 247
-      } else {
-        output[index] = 248
-        output[index + 1] = 250
-        output[index + 2] = 252
-      }
-
-      output[index + 3] = 255
-    }
-  }
-
-  return blankImageData
-}
-
-function buildProvincePixelCache(sourceImageData, provinceByRgb) {
-  const cache = new Map()
-  const { width, height, data } = sourceImageData
-
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      const pixelIndex = (y * width + x) * 4
-      const rgb = `${data[pixelIndex]},${data[pixelIndex + 1]},${data[pixelIndex + 2]}`
-      const province = provinceByRgb.get(rgb)
-
-      if (!province) {
-        continue
-      }
-
-      let entry = cache.get(province.id)
-
-      if (!entry) {
-        entry = {
-          pixels: [],
-          minX: x,
-          minY: y,
-          maxX: x,
-          maxY: y,
-        }
-        cache.set(province.id, entry)
-      }
-
-      entry.pixels.push(pixelIndex)
-      entry.minX = Math.min(entry.minX, x)
-      entry.minY = Math.min(entry.minY, y)
-      entry.maxX = Math.max(entry.maxX, x)
-      entry.maxY = Math.max(entry.maxY, y)
-    }
-  }
-
-  for (const [provinceId, entry] of cache) {
-    cache.set(provinceId, {
-      ...entry,
-      pixels: Uint32Array.from(entry.pixels),
-    })
-  }
-
-  return cache
-}
-
-function drawProvinceOverlay(overlayCanvas, overlayImageData, pixelCache, province, color) {
-  if (!overlayCanvas || !overlayImageData || !province || isWater(province)) {
-    return
-  }
-
-  const context = overlayCanvas.getContext('2d')
-  const cacheEntry = pixelCache.get(province.id)
-
-  if (!cacheEntry) {
-    return
-  }
-
-  const output = overlayImageData.data
-  const parsedColor = color ? hexToRgb(color) : null
-
-  for (const pixelIndex of cacheEntry.pixels) {
-    output[pixelIndex] = parsedColor?.red ?? 0
-    output[pixelIndex + 1] = parsedColor?.green ?? 0
-    output[pixelIndex + 2] = parsedColor?.blue ?? 0
-    output[pixelIndex + 3] = parsedColor ? 170 : 0
-  }
-
-  context.putImageData(
-    overlayImageData,
-    0,
-    0,
-    cacheEntry.minX,
-    cacheEntry.minY,
-    cacheEntry.maxX - cacheEntry.minX + 1,
-    cacheEntry.maxY - cacheEntry.minY + 1,
-  )
-}
-
-function drawAllOverlay(overlayCanvas, overlayImageData, pixelCache, provinceById, assignments, countries) {
-  if (!overlayCanvas || !overlayImageData) {
-    return
-  }
-
-  const context = overlayCanvas.getContext('2d')
-
-  overlayImageData.data.fill(0)
-  context.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height)
-
-  for (const [provinceId, color] of Object.entries(assignments)) {
-    if (!countries[color]) {
-      continue
-    }
-
-    const province = provinceById.get(provinceId)
-    drawProvinceOverlay(overlayCanvas, overlayImageData, pixelCache, province, color)
-  }
-}
-
-function downloadJson(fileName, value) {
-  const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-
-  anchor.href = url
-  anchor.download = fileName
-  anchor.click()
-  URL.revokeObjectURL(url)
-}
-
-function clampZoom(value) {
-  return Math.min(2, Math.max(0.15, value))
-}
+import { CountryPanel } from './editor/CountryPanel'
+import { MapCanvas } from './editor/MapCanvas'
+import { PresetLoader } from './editor/PresetLoader'
+import { ProvinceInfo } from './editor/ProvinceInfo'
+import {
+  buildProvincePixelCache,
+  drawAllOverlay,
+  drawBlankMap,
+  drawBorderMap,
+  drawProvinceOverlay,
+  drawProvincesOverlay,
+} from './map/canvasRenderers'
+import {
+  DEFINITION_PATH,
+  MAP_IMAGE_PATH,
+  PRESET_INDEX_PATH,
+  STATES_INDEX_PATH,
+} from './map/constants'
+import { clampZoom, isWater, parseDefinitionCsv, waitForPaint } from './map/mapData'
 
 function App() {
   const mapScrollRef = useRef(null)
   const baseCanvasRef = useRef(null)
   const overlayCanvasRef = useRef(null)
+  const borderCanvasRef = useRef(null)
   const sourceImageDataRef = useRef(null)
   const overlayImageDataRef = useRef(null)
   const provinceByRgbRef = useRef(new Map())
   const provinceByIdRef = useRef(new Map())
   const provincePixelCacheRef = useRef(new Map())
+  const statesByIdRef = useRef(new Map())
+  const stateByProvinceRef = useRef(new Map())
   const assignmentsRef = useRef({})
   const zoomRef = useRef(0.35)
   const isPaintingRef = useRef(false)
@@ -218,16 +40,20 @@ function App() {
 
   const [page, setPage] = useState('editor')
   const [status, setStatus] = useState('지도 데이터를 불러오는 중입니다.')
+  const [isMapRendering, setIsMapRendering] = useState(true)
   const [mapSize, setMapSize] = useState(null)
   const [zoom, setZoom] = useState(0.35)
   const [activeTool, setActiveTool] = useState('paint')
   const [paintMode, setPaintMode] = useState('single')
+  const [paintUnit, setPaintUnit] = useState('province')
+  const [borderMode, setBorderMode] = useState('province')
   const [countries, setCountries] = useState({
     '#d94645': { name: '국가 1' },
   })
   const [activeColor, setActiveColor] = useState('#d94645')
   const [assignments, setAssignments] = useState({})
   const [selectedProvince, setSelectedProvince] = useState(null)
+  const [selectedState, setSelectedState] = useState(null)
   const [presetIndex, setPresetIndex] = useState([])
   const [selectedPresetPath, setSelectedPresetPath] = useState('')
 
@@ -302,6 +128,7 @@ function App() {
 
     async function loadMapData() {
       try {
+        setIsMapRendering(true)
         const [definitionResponse, presetIndexResponse] = await Promise.all([
           fetch(DEFINITION_PATH),
           fetch(PRESET_INDEX_PATH),
@@ -322,6 +149,24 @@ function App() {
           setSelectedPresetPath(indexJson[0]?.path ?? '')
         }
 
+        const statesResponse = await fetch(STATES_INDEX_PATH)
+
+        if (statesResponse.ok) {
+          const statesIndex = await statesResponse.json()
+          statesByIdRef.current = new Map(
+            statesIndex.states.map((state) => [
+              state.id,
+              {
+                ...state,
+                provinces: state.provinces
+                  .map((provinceId) => provinceById.get(provinceId))
+                  .filter(Boolean),
+              },
+            ]),
+          )
+          stateByProvinceRef.current = new Map(Object.entries(statesIndex.provinceToState))
+        }
+
         const image = new Image()
         image.src = MAP_IMAGE_PATH
         await image.decode()
@@ -332,12 +177,15 @@ function App() {
 
         const baseCanvas = baseCanvasRef.current
         const overlayCanvas = overlayCanvasRef.current
+        const borderCanvas = borderCanvasRef.current
         const baseContext = baseCanvas.getContext('2d', { willReadFrequently: true })
 
         baseCanvas.width = image.naturalWidth
         baseCanvas.height = image.naturalHeight
         overlayCanvas.width = image.naturalWidth
         overlayCanvas.height = image.naturalHeight
+        borderCanvas.width = image.naturalWidth
+        borderCanvas.height = image.naturalHeight
 
         baseContext.drawImage(image, 0, 0)
 
@@ -346,13 +194,23 @@ function App() {
         overlayImageDataRef.current = new ImageData(baseCanvas.width, baseCanvas.height)
         provincePixelCacheRef.current = buildProvincePixelCache(sourceImageData, provinceByRgb)
 
-        baseContext.putImageData(createBlankMapImageData(sourceImageData, provinceByRgb), 0, 0)
+        await waitForPaint()
+        drawBlankMap(baseCanvas, sourceImageData, provinceByRgb)
+        drawBorderMap(
+          borderCanvas,
+          sourceImageData,
+          provinceByRgb,
+          stateByProvinceRef.current,
+          'province',
+        )
 
         setMapSize({ width: baseCanvas.width, height: baseCanvas.height })
         setStatus('지도 로드 완료')
+        setIsMapRendering(false)
       } catch (error) {
         if (!ignore) {
           setStatus(error.message)
+          setIsMapRendering(false)
         }
       }
     }
@@ -363,6 +221,38 @@ function App() {
       ignore = true
     }
   }, [])
+
+  useEffect(() => {
+    let ignore = false
+
+    async function renderBorderMode() {
+      if (!sourceImageDataRef.current) {
+        return
+      }
+
+      setIsMapRendering(true)
+      await waitForPaint()
+
+      if (ignore) {
+        return
+      }
+
+      drawBorderMap(
+        borderCanvasRef.current,
+        sourceImageDataRef.current,
+        provinceByRgbRef.current,
+        stateByProvinceRef.current,
+        borderMode,
+      )
+      setIsMapRendering(false)
+    }
+
+    renderBorderMode()
+
+    return () => {
+      ignore = true
+    }
+  }, [borderMode])
 
   useEffect(() => {
     drawAllOverlay(
@@ -406,21 +296,44 @@ function App() {
     setSelectedProvince(clicked)
     lastPaintedProvinceRef.current = clicked.province.id
 
+    const stateId = stateByProvinceRef.current.get(clicked.province.id)
+    const clickedState = stateId ? statesByIdRef.current.get(stateId) : null
+    setSelectedState(clickedState ?? null)
+
     if (page !== 'editor' || !activeCountry || activeTool !== 'paint' || isWater(clicked.province)) {
       return
     }
 
-    assignmentsRef.current = {
-      ...assignmentsRef.current,
-      [clicked.province.id]: activeColor,
+    if (paintUnit === 'state' && clickedState) {
+      const nextAssignments = { ...assignmentsRef.current }
+      const landProvinces = clickedState.provinces.filter((province) => !isWater(province))
+
+      for (const province of landProvinces) {
+        nextAssignments[province.id] = activeColor
+      }
+
+      assignmentsRef.current = nextAssignments
+      drawProvincesOverlay(
+        overlayCanvasRef.current,
+        overlayImageDataRef.current,
+        provincePixelCacheRef.current,
+        landProvinces,
+        activeColor,
+      )
+    } else {
+      assignmentsRef.current = {
+        ...assignmentsRef.current,
+        [clicked.province.id]: activeColor,
+      }
+      drawProvinceOverlay(
+        overlayCanvasRef.current,
+        overlayImageDataRef.current,
+        provincePixelCacheRef.current,
+        clicked.province,
+        activeColor,
+      )
     }
-    drawProvinceOverlay(
-      overlayCanvasRef.current,
-      overlayImageDataRef.current,
-      provincePixelCacheRef.current,
-      clicked.province,
-      activeColor,
-    )
+
     setAssignments(assignmentsRef.current)
   }
 
@@ -524,15 +437,37 @@ function App() {
 
     setAssignments((currentAssignments) => {
       const nextAssignments = { ...currentAssignments }
-      delete nextAssignments[selectedProvince.province.id]
+      const stateId = stateByProvinceRef.current.get(selectedProvince.province.id)
+      const selectedProvinceState = stateId ? statesByIdRef.current.get(stateId) : null
+
+      if (paintUnit === 'state' && selectedProvinceState) {
+        for (const province of selectedProvinceState.provinces) {
+          delete nextAssignments[province.id]
+        }
+      } else {
+        delete nextAssignments[selectedProvince.province.id]
+      }
+
       assignmentsRef.current = nextAssignments
-      drawProvinceOverlay(
-        overlayCanvasRef.current,
-        overlayImageDataRef.current,
-        provincePixelCacheRef.current,
-        selectedProvince.province,
-        null,
-      )
+
+      if (paintUnit === 'state' && selectedProvinceState) {
+        drawProvincesOverlay(
+          overlayCanvasRef.current,
+          overlayImageDataRef.current,
+          provincePixelCacheRef.current,
+          selectedProvinceState.provinces,
+          null,
+        )
+      } else {
+        drawProvinceOverlay(
+          overlayCanvasRef.current,
+          overlayImageDataRef.current,
+          provincePixelCacheRef.current,
+          selectedProvince.province,
+          null,
+        )
+      }
+
       return nextAssignments
     })
   }
@@ -591,176 +526,58 @@ function App() {
         </nav>
       </header>
 
-      <section className="map-panel" aria-labelledby="map-title">
-        <div className="panel-header">
-          <div>
-            <h2 id="map-title">{page === 'editor' ? 'Map Editor' : 'Preset Loader'}</h2>
-            <p>
-              {mapSize ? `${mapSize.width} x ${mapSize.height}` : '-'} / zoom{' '}
-              {Math.round(zoom * 100)}%
-            </p>
-          </div>
-          <div className="map-tools" aria-label="지도 도구">
-            <div className="tool-group" role="group" aria-label="도구">
-              <button
-                type="button"
-                aria-pressed={activeTool === 'paint'}
-                onClick={() => setActiveTool('paint')}
-              >
-                Paint
-              </button>
-              <button
-                type="button"
-                aria-pressed={activeTool === 'hand'}
-                onClick={() => setActiveTool('hand')}
-              >
-                Hand
-              </button>
-            </div>
-            <div className="zoom-buttons" role="group" aria-label="확대 축소">
-              <button type="button" onClick={() => updateZoom(zoomRef.current + 0.15)}>
-                +
-              </button>
-              <button type="button" onClick={() => updateZoom(zoomRef.current - 0.15)}>
-                -
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="map-scroll" ref={mapScrollRef}>
-          <div className="canvas-stack" style={canvasStyle}>
-            <canvas
-              ref={baseCanvasRef}
-              className="province-map"
-              data-tool={activeTool}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-              aria-label="프로빈스 백지도"
-            />
-            <canvas ref={overlayCanvasRef} className="province-overlay" aria-hidden="true" />
-          </div>
-        </div>
-      </section>
+      <MapCanvas
+        activeTool={activeTool}
+        baseCanvasRef={baseCanvasRef}
+        borderCanvasRef={borderCanvasRef}
+        canvasStyle={canvasStyle}
+        isMapRendering={isMapRendering}
+        mapScrollRef={mapScrollRef}
+        mapSize={mapSize}
+        onActiveToolChange={setActiveTool}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onZoomIn={() => updateZoom(zoomRef.current + 0.15)}
+        onZoomOut={() => updateZoom(zoomRef.current - 0.15)}
+        overlayCanvasRef={overlayCanvasRef}
+        page={page}
+        zoom={zoom}
+      />
 
       <aside className="side-panel" aria-label="맵 도구">
         {page === 'editor' ? (
-          <section aria-labelledby="countries-title">
-            <div className="side-header">
-              <h2 id="countries-title">Countries</h2>
-              <button type="button" onClick={addCountry}>
-                Add
-              </button>
-            </div>
-
-            <div className="paint-modes" role="group" aria-label="페인트 모드">
-              <button
-                type="button"
-                aria-pressed={paintMode === 'single'}
-                onClick={() => setPaintMode('single')}
-              >
-                Single
-              </button>
-              <button
-                type="button"
-                aria-pressed={paintMode === 'multi'}
-                onClick={() => setPaintMode('multi')}
-              >
-                Multi
-              </button>
-            </div>
-
-            <div className="country-list">
-              {Object.entries(countries).map(([color, country]) => (
-                <article
-                  className="country-row"
-                  data-active={activeColor === color}
-                  key={color}
-                >
-                  <button
-                    type="button"
-                    className="swatch-button"
-                    style={{ backgroundColor: color }}
-                    aria-label={`${country.name} 선택`}
-                    onClick={() => setActiveColor(color)}
-                  />
-                  <input
-                    aria-label="국가 이름"
-                    value={country.name}
-                    onChange={(event) => updateCountryName(color, event.target.value)}
-                  />
-                  <input
-                    aria-label="국가 색상"
-                    type="color"
-                    value={color}
-                    onChange={(event) => updateCountryColor(color, event.target.value)}
-                  />
-                </article>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              className="full-button"
-              onClick={() => downloadJson('map-preset.json', preset)}
-            >
-              Download Preset JSON
-            </button>
-          </section>
+          <CountryPanel
+            activeColor={activeColor}
+            borderMode={borderMode}
+            countries={countries}
+            onAddCountry={addCountry}
+            onBorderModeChange={setBorderMode}
+            onCountryColorChange={updateCountryColor}
+            onCountryNameChange={updateCountryName}
+            onPaintModeChange={setPaintMode}
+            onPaintUnitChange={setPaintUnit}
+            onSelectColor={setActiveColor}
+            paintMode={paintMode}
+            paintUnit={paintUnit}
+            preset={preset}
+          />
         ) : (
-          <section aria-labelledby="presets-title">
-            <h2 id="presets-title">Presets</h2>
-            <label>
-              Preset file
-              <select
-                value={selectedPresetPath}
-                onChange={(event) => setSelectedPresetPath(event.target.value)}
-              >
-                {presetIndex.map((presetItem) => (
-                  <option key={presetItem.path} value={presetItem.path}>
-                    {presetItem.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button type="button" className="full-button" onClick={() => loadPreset()}>
-              Load Preset
-            </button>
-          </section>
+          <PresetLoader
+            onLoadPreset={() => loadPreset()}
+            onSelectedPresetPathChange={setSelectedPresetPath}
+            presetIndex={presetIndex}
+            selectedPresetPath={selectedPresetPath}
+          />
         )}
 
-        <section className="province-info" aria-labelledby="province-title">
-          <h2 id="province-title">Province</h2>
-          {selectedProvince?.province ? (
-            <dl>
-              <div>
-                <dt>ID</dt>
-                <dd>{selectedProvince.province.id}</dd>
-              </div>
-              <div>
-                <dt>Terrain</dt>
-                <dd>{selectedProvince.province.terrain}</dd>
-              </div>
-              <div>
-                <dt>Type</dt>
-                <dd>{selectedProvince.province.type}</dd>
-              </div>
-              <div>
-                <dt>Country</dt>
-                <dd>{selectedCountry?.name ?? '미배정'}</dd>
-              </div>
-            </dl>
-          ) : (
-            <p>프로빈스를 클릭하세요.</p>
-          )}
-          {page === 'editor' ? (
-            <button type="button" className="full-button" onClick={removeAssignment}>
-              Clear Selected Province
-            </button>
-          ) : null}
-        </section>
+        <ProvinceInfo
+          isEditor={page === 'editor'}
+          onRemoveAssignment={removeAssignment}
+          selectedCountry={selectedCountry}
+          selectedProvince={selectedProvince}
+          selectedState={selectedState}
+        />
       </aside>
     </main>
   )

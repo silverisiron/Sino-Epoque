@@ -1,5 +1,5 @@
-import './App.css'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import './App.css'
 
 const BASE_MAP_PATH = '/maps/base'
 const MAP_IMAGE_PATH = `${BASE_MAP_PATH}/bmp/provinces.bmp`

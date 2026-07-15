@@ -1,19 +1,21 @@
-# Efficiency Rules
+# Follow this Guidelines
 
-Keep responses short.
-Do not run browser automation.
-Do not start dev servers unless explicitly requested.
-Only run build and lint checks.
+## Stack
 
-# Validation Policy
+- React
+- React Compiler
+- Tailwind CSS v4
 
-Do not run Playwright.
-Do not open browsers.
-Do not start dev servers.
+## Development Rules
 
-Only run:
-
-npm run build
-npm run lint
-
-Browser verification is performed manually by the developer.
+- Follow the user's request exactly.
+- Do not modify unrelated code, UI, behavior, styling, structure, or files unless explicitly requested.
+- If any requirement is ambiguous or uncertain, **do not implement anything.** Ask clarifying questions first.
+- Reuse existing components whenever possible before creating new ones.
+- Follow modern React best practices based on the official React documentation.
+- Avoid premature optimization. Prioritize readability and maintainability.
+- Use semantic HTML and follow web standards.
+- Keep components small, focused, and composable.
+- Minimize unnecessary dependencies.
+- Preserve the existing project architecture and coding style unless instructed otherwise.
+- Make the smallest change necessary to accomplish the requested task.

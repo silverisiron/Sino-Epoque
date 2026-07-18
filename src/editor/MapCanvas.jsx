@@ -1,3 +1,5 @@
+import styles from '../admin/AdminMapEditorPage.module.css'
+
 export function MapCanvas({
   activeTool,
   baseCanvasRef,
@@ -17,8 +19,8 @@ export function MapCanvas({
   zoom,
 }) {
   return (
-    <section className="map-panel" aria-labelledby="map-title">
-      <div className="panel-header">
+    <section className={styles.mapPanel} aria-labelledby="map-title">
+      <div className={styles.panelHeader}>
         <div>
           <h2 id="map-title">{page === 'editor' ? 'Map Editor' : 'Preset Loader'}</h2>
           <p>
@@ -26,8 +28,8 @@ export function MapCanvas({
             {Math.round(zoom * 100)}%
           </p>
         </div>
-        <div className="map-tools" aria-label="지도 도구">
-          <div className="tool-group" role="group" aria-label="도구">
+        <div className={styles.mapTools} aria-label="지도 도구">
+          <div className={styles.toolGroup} role="group" aria-label="도구">
             <button
               type="button"
               aria-pressed={activeTool === 'paint'}
@@ -43,7 +45,7 @@ export function MapCanvas({
               화면 이동
             </button>
           </div>
-          <div className="zoom-buttons" role="group" aria-label="확대 축소">
+          <div className={styles.zoomButtons} role="group" aria-label="확대 축소">
             <button type="button" onClick={onZoomIn}>
               +
             </button>
@@ -54,12 +56,12 @@ export function MapCanvas({
         </div>
       </div>
 
-      <div className="map-scroll" ref={mapScrollRef}>
-        <div className="map-stage">
-          <div className="canvas-stack" style={canvasStyle}>
+      <div className={styles.mapScroll} ref={mapScrollRef}>
+        <div className={styles.mapStage}>
+          <div className={styles.canvasStack} style={canvasStyle}>
             <canvas
               ref={baseCanvasRef}
-              className="province-map"
+              className={styles.provinceMap}
               data-tool={activeTool}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
@@ -67,14 +69,16 @@ export function MapCanvas({
               onPointerCancel={onPointerUp}
               aria-label="프로빈스 백지도"
             />
-            <canvas ref={overlayCanvasRef} className="province-overlay" aria-hidden="true" />
-            <canvas ref={borderCanvasRef} className="province-border" aria-hidden="true" />
+            <canvas ref={overlayCanvasRef} className={styles.provinceOverlay} aria-hidden="true" />
+            <canvas ref={borderCanvasRef} className={styles.provinceBorder} aria-hidden="true" />
           </div>
         </div>
         {isMapRendering ? (
-          <div className="map-loading" role="status" aria-live="polite">
-            <span className="throbber" aria-hidden="true" />
-            <span>로딩중...</span>
+          <div className={styles.mapLoading}>
+            <div className={styles.loadingContent} role="status" aria-live="polite">
+              <span className={styles.throbber} aria-hidden="true" />
+              <span>로딩중...</span>
+            </div>
           </div>
         ) : null}
       </div>

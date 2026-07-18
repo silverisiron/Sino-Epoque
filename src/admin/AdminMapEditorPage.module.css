@@ -1,4 +1,4 @@
-.app-shell {
+.appShell {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   grid-template-rows: auto minmax(0, 1fr);
@@ -9,14 +9,14 @@
   color: #17202a;
 }
 
-.app-header,
-.map-panel,
-.side-panel {
+.appHeader,
+.mapPanel,
+.sidePanel {
   border: 1px solid #d5dbe3;
   background: #ffffff;
 }
 
-.app-header {
+.appHeader {
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
@@ -25,45 +25,45 @@
   padding: 12px;
 }
 
-.app-header nav,
-.side-header,
-.panel-header {
+.appHeader nav,
+.sideHeader,
+.panelHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.map-tools,
-.tool-group,
-.paint-modes {
+.mapTools,
+.toolGroup,
+.paintModes {
   display: flex;
   gap: 6px;
 }
 
-.zoom-buttons {
+.zoomButtons {
   display: grid;
   gap: 4px;
 }
 
-.zoom-buttons button {
+.zoomButtons button {
   width: 32px;
   min-height: 28px;
   font-size: 18px;
   line-height: 1;
 }
 
-.map-panel {
+.mapPanel {
   min-width: 0;
   min-height: 0;
 }
 
-.panel-header {
+.panelHeader {
   padding: 12px;
   border-bottom: 1px solid #d5dbe3;
 }
 
-.map-scroll {
+.mapScroll {
   position: relative;
   width: 100%;
   max-height: calc(100vh - 137px);
@@ -72,22 +72,22 @@
   background: #e6ebf1;
 }
 
-.map-stage {
+.mapStage {
   display: grid;
   min-width: 100%;
   min-height: 100%;
   place-items: center;
 }
 
-.canvas-stack {
+.canvasStack {
   position: relative;
   min-width: 1px;
   min-height: 1px;
 }
 
-.province-map,
-.province-overlay,
-.province-border {
+.provinceMap,
+.provinceOverlay,
+.provinceBorder {
   position: absolute;
   inset: 0;
   display: block;
@@ -96,39 +96,43 @@
   image-rendering: pixelated;
 }
 
-.province-map {
+.provinceMap {
   cursor: crosshair;
   touch-action: none;
 }
 
-.province-map[data-tool='hand'] {
+.provinceMap[data-tool='hand'] {
   cursor: grab;
 }
 
-.province-map[data-tool='hand']:active {
+.provinceMap[data-tool='hand']:active {
   cursor: grabbing;
 }
 
-.province-overlay,
-.province-border {
+.provinceOverlay,
+.provinceBorder {
   pointer-events: none;
 }
 
-.province-overlay {
+.provinceOverlay {
   z-index: 1;
 }
 
-.province-border {
+.provinceBorder {
   z-index: 2;
 }
 
-.map-loading {
-  position: sticky;
-  left: 50%;
-  top: 50%;
-  z-index: 2;
+.mapLoading {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.loadingContent {
   display: flex;
-  width: max-content;
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
@@ -136,7 +140,6 @@
   background: #ffffff;
   font-size: 14px;
   font-weight: 600;
-  transform: translate(-50%, -50%);
 }
 
 .throbber {
@@ -154,7 +157,7 @@
   }
 }
 
-.side-panel {
+.sidePanel {
   display: grid;
   align-content: start;
   gap: 18px;
@@ -162,21 +165,21 @@
   overflow: auto;
 }
 
-.country-list {
+.countryList {
   display: grid;
   gap: 8px;
   margin: 12px 0;
 }
 
-.paint-modes {
+.paintModes {
   margin-top: 12px;
 }
 
-.paint-modes button {
+.paintModes button {
   flex: 1;
 }
 
-.country-row {
+.countryRow {
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr) 44px;
   gap: 8px;
@@ -185,87 +188,87 @@
   border: 1px solid #d5dbe3;
 }
 
-.country-row[data-active='true'] {
+.countryRow[data-active='true'] {
   border-color: #17202a;
 }
 
-.swatch-button {
+.swatchButton {
   width: 28px;
   height: 28px;
   border: 1px solid #17202a;
 }
 
-.province-info {
+.provinceInfo {
   border-top: 1px solid #d5dbe3;
   padding-top: 12px;
 }
 
-h1,
-h2,
-p,
-dl {
+.appShell h1,
+.appShell h2,
+.appShell p,
+.appShell dl {
   margin: 0;
 }
 
-h1 {
+.appShell h1 {
   font-size: 20px;
 }
 
-h2 {
+.appShell h2 {
   font-size: 16px;
 }
 
-p,
-label,
-button,
-input,
-select,
-dt,
-dd {
+.appShell p,
+.appShell label,
+.appShell button,
+.appShell input,
+.appShell select,
+.appShell dt,
+.appShell dd {
   font-size: 14px;
 }
 
-label,
-.province-info dl {
+.appShell label,
+.provinceInfo dl {
   display: grid;
   gap: 6px;
 }
 
-input,
-select,
-button {
+.appShell input,
+.appShell select,
+.appShell button {
   min-height: 32px;
 }
 
-button {
+.appShell button {
   border: 1px solid #aeb7c2;
   background: #ffffff;
 }
 
-button[aria-pressed='true'] {
+.appShell button[aria-pressed='true'] {
   background: #17202a;
   color: #ffffff;
 }
 
-.full-button {
+.fullButton {
   width: 100%;
   margin-top: 10px;
 }
 
-dt {
+.appShell dt {
   color: #667085;
 }
 
-dd {
+.appShell dd {
   font-weight: 600;
 }
 
 @media (max-width: 900px) {
-  .app-shell {
+  .appShell {
     grid-template-columns: 1fr;
   }
 
-  .map-scroll {
+  .mapScroll {
     max-height: 60vh;
   }
 }

@@ -1,4 +1,5 @@
 import { downloadJson } from '../map/mapData'
+import styles from '../admin/AdminMapEditorPage.module.css'
 
 export function CountryPanel({
   activeColor,
@@ -17,14 +18,14 @@ export function CountryPanel({
 }) {
   return (
     <section aria-labelledby="countries-title">
-      <div className="side-header">
+      <div className={styles.sideHeader}>
         <h2 id="countries-title">Countries</h2>
         <button type="button" onClick={onAddCountry}>
           추가
         </button>
       </div>
 
-      <div className="paint-modes" role="group" aria-label="페인트 모드">
+      <div className={styles.paintModes} role="group" aria-label="페인트 모드">
         <button
           type="button"
           aria-pressed={paintMode === 'single'}
@@ -41,7 +42,7 @@ export function CountryPanel({
         </button>
       </div>
 
-      <div className="paint-modes" role="group" aria-label="색칠 단위">
+      <div className={styles.paintModes} role="group" aria-label="색칠 단위">
         <button
           type="button"
           aria-pressed={paintUnit === 'province'}
@@ -58,7 +59,7 @@ export function CountryPanel({
         </button>
       </div>
 
-      <div className="paint-modes" role="group" aria-label="경계선 표시">
+      <div className={styles.paintModes} role="group" aria-label="경계선 표시">
         <button
           type="button"
           aria-pressed={borderMode === 'province'}
@@ -82,12 +83,12 @@ export function CountryPanel({
         </button>
       </div>
 
-      <div className="country-list">
+      <div className={styles.countryList}>
         {Object.entries(countries).map(([color, country]) => (
-          <article className="country-row" data-active={activeColor === color} key={color}>
+          <article className={styles.countryRow} data-active={activeColor === color} key={color}>
             <button
               type="button"
-              className="swatch-button"
+              className={styles.swatchButton}
               style={{ backgroundColor: color }}
               aria-label={`${country.name} 선택`}
               onClick={() => onSelectColor(color)}
@@ -109,7 +110,7 @@ export function CountryPanel({
 
       <button
         type="button"
-        className="full-button"
+        className={styles.fullButton}
         onClick={() => downloadJson('map-preset.json', preset)}
       >
          JSON으로 프리셋 저장하기

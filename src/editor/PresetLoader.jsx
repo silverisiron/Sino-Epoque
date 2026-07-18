@@ -1,3 +1,5 @@
+import styles from '../admin/AdminMapEditorPage.module.css'
+
 export function PresetLoader({
   onLoadPreset,
   onSelectedPresetPathChange,
@@ -20,7 +22,7 @@ export function PresetLoader({
           ))}
         </select>
       </label>
-      <button type="button" className="full-button" onClick={onLoadPreset}>
+      <button type="button" className={styles.fullButton} onClick={onLoadPreset}>
         프리셋 불러오기
       </button>
     </section>

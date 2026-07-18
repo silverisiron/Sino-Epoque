@@ -1,6 +1,8 @@
+import styles from '../admin/AdminMapEditorPage.module.css'
+
 export function ProvinceInfo({ isEditor, onRemoveAssignment, selectedCountry, selectedProvince, selectedState }) {
   return (
-    <section className="province-info" aria-labelledby="province-title">
+    <section className={styles.provinceInfo} aria-labelledby="province-title">
       <h2 id="province-title">프로빈스</h2>
       {selectedProvince?.province ? (
         <dl>
@@ -29,7 +31,7 @@ export function ProvinceInfo({ isEditor, onRemoveAssignment, selectedCountry, se
         <p>프로빈스를 클릭하세요.</p>
       )}
       {isEditor ? (
-        <button type="button" className="full-button" onClick={onRemoveAssignment}>
+        <button type="button" className={styles.fullButton} onClick={onRemoveAssignment}>
           프로빈스 선택 해제
         </button>
       ) : null}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import './AdminMapEditorPage.css'
+import styles from './AdminMapEditorPage.module.css'
 import { CountryPanel } from '../editor/CountryPanel'
 import { MapCanvas } from '../editor/MapCanvas'
 import { PresetLoader } from '../editor/PresetLoader'
@@ -31,8 +31,8 @@ export function AdminMapEditorPage() {
   })
 
   return (
-    <main className="app-shell">
-      <header className="app-header">
+    <main className={styles.appShell}>
+      <header className={styles.appHeader}>
         <div>
           <h1>Province Map Tool</h1>
           <p>{mapData.status}</p>
@@ -66,7 +66,7 @@ export function AdminMapEditorPage() {
         zoom={viewport.zoom}
       />
 
-      <aside className="side-panel" aria-label="맵 도구">
+      <aside className={styles.sidePanel} aria-label="맵 도구">
         {page === 'editor' ? (
           <CountryPanel
             activeColor={editor.activeColor}

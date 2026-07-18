@@ -11,7 +11,6 @@ export function useMapEditor({
   mapScrollRef,
   overlayCanvasRef,
   overlayImageDataRef,
-  provinceByIdRef,
   provinceByRgbRef,
   provincePixelCacheRef,
   redrawAllOverlay,

@@ -65,9 +65,18 @@
 
 .map-scroll {
   position: relative;
-  height: calc(100vh - 137px);
+  width: 100%;
+  max-height: calc(100vh - 137px);
+  aspect-ratio: 5632 / 2048;
   overflow: auto;
   background: #e6ebf1;
+}
+
+.map-stage {
+  display: grid;
+  min-width: 100%;
+  min-height: 100%;
+  place-items: center;
 }
 
 .canvas-stack {
@@ -257,6 +266,6 @@ dd {
   }
 
   .map-scroll {
-    height: 60vh;
+    max-height: 60vh;
   }
 }

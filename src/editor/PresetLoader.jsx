@@ -6,9 +6,9 @@ export function PresetLoader({
 }) {
   return (
     <section aria-labelledby="presets-title">
-      <h2 id="presets-title">Presets</h2>
+      <h2 id="presets-title">프리셋</h2>
       <label>
-        Preset file
+        프리셋 파일
         <select
           value={selectedPresetPath}
           onChange={(event) => onSelectedPresetPathChange(event.target.value)}
@@ -21,7 +21,7 @@ export function PresetLoader({
         </select>
       </label>
       <button type="button" className="full-button" onClick={onLoadPreset}>
-        Load Preset
+        프리셋 불러오기
       </button>
     </section>
   )

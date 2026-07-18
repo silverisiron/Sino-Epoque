@@ -58,8 +58,8 @@ export function downloadJson(fileName, value) {
   URL.revokeObjectURL(url)
 }
 
-export function clampZoom(value) {
-  return Math.min(2, Math.max(0.15, value))
+export function clampZoom(value, minimum = 0.15) {
+  return Math.min(Math.max(2, minimum), Math.max(minimum, value))
 }
 
 export function waitForPaint() {

@@ -33,14 +33,14 @@ export function MapCanvas({
               aria-pressed={activeTool === 'paint'}
               onClick={() => onActiveToolChange('paint')}
             >
-              Paint
+              그리기
             </button>
             <button
               type="button"
               aria-pressed={activeTool === 'hand'}
               onClick={() => onActiveToolChange('hand')}
             >
-              Hand
+              화면 이동
             </button>
           </div>
           <div className="zoom-buttons" role="group" aria-label="확대 축소">
@@ -55,19 +55,21 @@ export function MapCanvas({
       </div>
 
       <div className="map-scroll" ref={mapScrollRef}>
-        <div className="canvas-stack" style={canvasStyle}>
-          <canvas
-            ref={baseCanvasRef}
-            className="province-map"
-            data-tool={activeTool}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
-            aria-label="프로빈스 백지도"
-          />
-          <canvas ref={overlayCanvasRef} className="province-overlay" aria-hidden="true" />
-          <canvas ref={borderCanvasRef} className="province-border" aria-hidden="true" />
+        <div className="map-stage">
+          <div className="canvas-stack" style={canvasStyle}>
+            <canvas
+              ref={baseCanvasRef}
+              className="province-map"
+              data-tool={activeTool}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerCancel={onPointerUp}
+              aria-label="프로빈스 백지도"
+            />
+            <canvas ref={overlayCanvasRef} className="province-overlay" aria-hidden="true" />
+            <canvas ref={borderCanvasRef} className="province-border" aria-hidden="true" />
+          </div>
         </div>
         {isMapRendering ? (
           <div className="map-loading" role="status" aria-live="polite">

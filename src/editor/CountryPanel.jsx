@@ -20,7 +20,7 @@ export function CountryPanel({
       <div className="side-header">
         <h2 id="countries-title">Countries</h2>
         <button type="button" onClick={onAddCountry}>
-          Add
+          추가
         </button>
       </div>
 
@@ -30,14 +30,14 @@ export function CountryPanel({
           aria-pressed={paintMode === 'single'}
           onClick={() => onPaintModeChange('single')}
         >
-          Single
+          단일 채우기
         </button>
         <button
           type="button"
           aria-pressed={paintMode === 'multi'}
           onClick={() => onPaintModeChange('multi')}
         >
-          Multi
+          다중 채우기
         </button>
       </div>
 
@@ -47,14 +47,14 @@ export function CountryPanel({
           aria-pressed={paintUnit === 'province'}
           onClick={() => onPaintUnitChange('province')}
         >
-          Province
+          Province 별 색칠
         </button>
         <button
           type="button"
           aria-pressed={paintUnit === 'state'}
           onClick={() => onPaintUnitChange('state')}
         >
-          State
+          State 별 색칠
         </button>
       </div>
 
@@ -64,21 +64,21 @@ export function CountryPanel({
           aria-pressed={borderMode === 'province'}
           onClick={() => onBorderModeChange('province')}
         >
-          Province Border
+          Province 국경
         </button>
         <button
           type="button"
           aria-pressed={borderMode === 'state'}
           onClick={() => onBorderModeChange('state')}
         >
-          State Border
+          State 국경
         </button>
         <button
           type="button"
           aria-pressed={borderMode === 'none'}
           onClick={() => onBorderModeChange('none')}
         >
-          No Border
+          국경 표시 없음
         </button>
       </div>
 
@@ -112,7 +112,7 @@ export function CountryPanel({
         className="full-button"
         onClick={() => downloadJson('map-preset.json', preset)}
       >
-        Download Preset JSON
+         JSON으로 프리셋 저장하기
       </button>
     </section>
   )

@@ -1,7 +1,7 @@
 export function ProvinceInfo({ isEditor, onRemoveAssignment, selectedCountry, selectedProvince, selectedState }) {
   return (
     <section className="province-info" aria-labelledby="province-title">
-      <h2 id="province-title">Province</h2>
+      <h2 id="province-title">프로빈스</h2>
       {selectedProvince?.province ? (
         <dl>
           <div>
@@ -9,19 +9,19 @@ export function ProvinceInfo({ isEditor, onRemoveAssignment, selectedCountry, se
             <dd>{selectedProvince.province.id}</dd>
           </div>
           <div>
-            <dt>Terrain</dt>
+            <dt>Terrain (지형)</dt>
             <dd>{selectedProvince.province.terrain}</dd>
           </div>
           <div>
-            <dt>Type</dt>
+            <dt>Type (타입)</dt>
             <dd>{selectedProvince.province.type}</dd>
           </div>
           <div>
-            <dt>Country</dt>
+            <dt>Country (국가)</dt>
             <dd>{selectedCountry?.name ?? '미배정'}</dd>
           </div>
           <div>
-            <dt>State</dt>
+            <dt>State (주 명칭)</dt>
             <dd>{selectedState?.displayName ?? '없음'}</dd>
           </div>
         </dl>
@@ -30,7 +30,7 @@ export function ProvinceInfo({ isEditor, onRemoveAssignment, selectedCountry, se
       )}
       {isEditor ? (
         <button type="button" className="full-button" onClick={onRemoveAssignment}>
-          Clear Selected Province
+          프로빈스 선택 해제
         </button>
       ) : null}
     </section>

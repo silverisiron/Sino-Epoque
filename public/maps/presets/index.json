@@ -2,5 +2,9 @@
   {
     "name": "Empty preset",
     "path": "/maps/presets/empty.json"
+  },
+  {
+    "name": "Test preset",
+    "path": "/maps/presets/test.json"
   }
 ]

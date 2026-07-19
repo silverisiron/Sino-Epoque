@@ -6,5 +6,9 @@
   {
     "name": "Test preset",
     "path": "/maps/presets/test.json"
+  },
+  {
+    "name": "1890-process preset",
+    "path": "/maps/presets/1890-process.json"
   }
 ]

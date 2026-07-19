@@ -169,6 +169,8 @@
   display: grid;
   gap: 8px;
   margin: 12px 0;
+  padding: 0;
+  list-style: none;
 }
 
 .paintModes {
@@ -181,15 +183,20 @@
 
 .countryRow {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) 44px;
+  grid-template-columns: 30px minmax(0, 1fr) 44px auto;
   gap: 8px;
   align-items: center;
   padding: 6px;
   border: 1px solid #d5dbe3;
+  cursor: grab;
 }
 
 .countryRow[data-active='true'] {
   border-color: #17202a;
+}
+
+.countryRow[data-dragging='true'] {
+  opacity: 0.5;
 }
 
 .swatchButton {

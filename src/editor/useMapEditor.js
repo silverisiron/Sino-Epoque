@@ -27,8 +27,8 @@ export function useMapEditor({
   const panRef = useRef(null)
 
   const [activeTool, setActiveTool] = useState('paint')
-  const [paintMode, setPaintMode] = useState('single')
-  const [paintUnit, setPaintUnit] = useState('province')
+  const [paintMode, setPaintMode] = useState('multi')
+  const [paintUnit, setPaintUnit] = useState('state')
   const [countries, setCountries] = useState({
     '#d94645': { name: '국가 1' },
   })
@@ -75,7 +75,7 @@ export function useMapEditor({
     return { x, y, rgb, province }
   }
 
-  function paintProvince(clicked) {
+  function applyToolToProvince(clicked) {
     if (!clicked?.province) {
       return
     }
@@ -91,37 +91,46 @@ export function useMapEditor({
     const clickedState = stateId ? statesByIdRef.current.get(stateId) : null
     setSelectedState(clickedState ?? null)
 
-    if (activePage !== 'editor' || !activeCountry || activeTool !== 'paint' || isWater(clicked.province)) {
+    if (
+      activePage !== 'editor' ||
+      activeTool === 'hand' ||
+      isWater(clicked.province) ||
+      (activeTool === 'paint' && !activeCountry)
+    ) {
       return
     }
 
-    if (paintUnit === 'state' && clickedState) {
-      const nextAssignments = { ...assignmentsRef.current }
-      const landProvinces = clickedState.provinces.filter((province) => !isWater(province))
+    const landProvinces =
+      paintUnit === 'state' && clickedState
+        ? clickedState.provinces.filter((province) => !isWater(province))
+        : [clicked.province]
+    const nextAssignments = { ...assignmentsRef.current }
 
-      for (const province of landProvinces) {
+    for (const province of landProvinces) {
+      if (activeTool === 'erase') {
+        delete nextAssignments[province.id]
+      } else {
         nextAssignments[province.id] = activeColor
       }
+    }
 
-      assignmentsRef.current = nextAssignments
+    assignmentsRef.current = nextAssignments
+
+    if (landProvinces.length > 1) {
       drawProvincesOverlay(
         overlayCanvasRef.current,
         overlayImageDataRef.current,
         provincePixelCacheRef.current,
         landProvinces,
-        activeColor,
+        activeTool === 'erase' ? null : activeColor,
       )
     } else {
-      assignmentsRef.current = {
-        ...assignmentsRef.current,
-        [clicked.province.id]: activeColor,
-      }
       drawProvinceOverlay(
         overlayCanvasRef.current,
         overlayImageDataRef.current,
         provincePixelCacheRef.current,
         clicked.province,
-        activeColor,
+        activeTool === 'erase' ? null : activeColor,
       )
     }
 
@@ -149,7 +158,7 @@ export function useMapEditor({
       event.currentTarget.setPointerCapture(event.pointerId)
     }
 
-    paintProvince(clicked)
+    applyToolToProvince(clicked)
   }
 
   function handlePointerMove(event) {
@@ -160,8 +169,8 @@ export function useMapEditor({
       return
     }
 
-    if (activeTool === 'paint' && paintMode === 'multi' && isPaintingRef.current) {
-      paintProvince(getProvinceFromPointer(event))
+    if (activeTool !== 'hand' && paintMode === 'multi' && isPaintingRef.current) {
+      applyToolToProvince(getProvinceFromPointer(event))
     }
   }
 
@@ -203,9 +212,12 @@ export function useMapEditor({
     }
 
     setCountries((currentCountries) => {
-      const nextCountries = { ...currentCountries }
-      nextCountries[nextColor] = nextCountries[previousColor]
-      delete nextCountries[previousColor]
+      const nextCountries = {}
+
+      for (const [color, country] of Object.entries(currentCountries)) {
+        nextCountries[color === previousColor ? nextColor : color] = country
+      }
+
       return nextCountries
     })
     setAssignments((currentAssignments) => {
@@ -219,6 +231,27 @@ export function useMapEditor({
       return nextAssignments
     })
     setActiveColor(nextColor)
+  }
+
+  function reorderCountries(orderedColors) {
+    setCountries((currentCountries) => {
+      const nextCountries = {}
+      const includedColors = new Set(orderedColors)
+
+      for (const color of orderedColors) {
+        if (currentCountries[color]) {
+          nextCountries[color] = currentCountries[color]
+        }
+      }
+
+      for (const [color, country] of Object.entries(currentCountries)) {
+        if (!includedColors.has(color)) {
+          nextCountries[color] = country
+        }
+      }
+
+      return nextCountries
+    })
   }
 
   function removeAssignment() {
@@ -301,6 +334,7 @@ export function useMapEditor({
     paintMode,
     paintUnit,
     preset,
+    reorderCountries,
     removeAssignment,
     selectedCountry,
     selectedProvince,

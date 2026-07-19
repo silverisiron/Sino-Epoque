@@ -28,7 +28,7 @@ export function MapCanvas({
             {Math.round(zoom * 100)}%
           </p>
         </div>
-        <div className={styles.mapTools} aria-label="지도 도구">
+        <div className={styles.mapTools} role="toolbar" aria-label="지도 도구">
           <div className={styles.toolGroup} role="group" aria-label="도구">
             <button
               type="button"
@@ -36,6 +36,13 @@ export function MapCanvas({
               onClick={() => onActiveToolChange('paint')}
             >
               그리기
+            </button>
+            <button
+              type="button"
+              aria-pressed={activeTool === 'erase'}
+              onClick={() => onActiveToolChange('erase')}
+            >
+              지우개
             </button>
             <button
               type="button"

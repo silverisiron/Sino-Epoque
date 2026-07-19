@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import styles from './AdminMapEditorPage.module.css'
 import { CountryPanel } from '../editor/CountryPanel'
 import { MapCanvas } from '../editor/MapCanvas'
 import { PresetLoader } from '../editor/PresetLoader'
@@ -7,10 +6,11 @@ import { ProvinceInfo } from '../editor/ProvinceInfo'
 import { useMapEditor } from '../editor/useMapEditor'
 import { useMapData } from '../map/useMapData'
 import { useMapViewport } from '../map/useMapViewport'
+import styles from './AdminMapEditorPage.module.css'
 
 export function AdminMapEditorPage() {
   const [page, setPage] = useState('editor')
-  const [borderMode, setBorderMode] = useState('province')
+  const [borderMode, setBorderMode] = useState('state')
   const mapData = useMapData(borderMode)
   const viewport = useMapViewport(mapData.mapSize)
   const editor = useMapEditor({
@@ -76,6 +76,7 @@ export function AdminMapEditorPage() {
             onBorderModeChange={setBorderMode}
             onCountryColorChange={editor.updateCountryColor}
             onCountryNameChange={editor.updateCountryName}
+            onCountryOrderChange={editor.reorderCountries}
             onPaintModeChange={editor.setPaintMode}
             onPaintUnitChange={editor.setPaintUnit}
             onSelectColor={editor.setActiveColor}

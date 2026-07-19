@@ -115,17 +115,9 @@ export function useMapData(borderMode) {
 
         await waitForPaint()
         drawBlankMap(baseCanvas, sourceImageData, provinceByRgb)
-        drawBorderMap(
-          borderCanvas,
-          sourceImageData,
-          provinceByRgb,
-          stateByProvinceRef.current,
-          'province',
-        )
 
         setMapSize({ width: baseCanvas.width, height: baseCanvas.height })
         setStatus('지도 로드 완료')
-        setIsMapRendering(false)
       } catch (error) {
         if (!ignore) {
           setStatus(error.message)
@@ -145,7 +137,7 @@ export function useMapData(borderMode) {
     let ignore = false
 
     async function renderBorderMode() {
-      if (!sourceImageDataRef.current) {
+      if (!mapSize || !sourceImageDataRef.current) {
         return
       }
 
@@ -171,7 +163,7 @@ export function useMapData(borderMode) {
     return () => {
       ignore = true
     }
-  }, [borderMode])
+  }, [borderMode, mapSize])
 
   return {
     baseCanvasRef,

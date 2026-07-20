@@ -3,7 +3,7 @@
   grid-template-columns: minmax(0, 1fr) 320px;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 12px;
-  min-height: 100vh;
+  height: 100vh;
   padding: 12px;
   background: #f4f5f7;
   color: #17202a;
@@ -87,6 +87,7 @@
 
 .provinceMap,
 .provinceOverlay,
+.sphereOverlay,
 .provinceBorder {
   position: absolute;
   inset: 0;
@@ -110,6 +111,7 @@
 }
 
 .provinceOverlay,
+.sphereOverlay,
 .provinceBorder {
   pointer-events: none;
 }
@@ -118,14 +120,18 @@
   z-index: 1;
 }
 
-.provinceBorder {
+.sphereOverlay {
   z-index: 2;
+}
+
+.provinceBorder {
+  z-index: 3;
 }
 
 .mapLoading {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: 4;
   display: grid;
   place-items: center;
   pointer-events: none;
@@ -160,9 +166,11 @@
 .sidePanel {
   display: grid;
   align-content: start;
+  min-height: 0;
   gap: 18px;
   padding: 12px;
-  overflow: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .countryList {
@@ -184,9 +192,26 @@
   flex: 1;
 }
 
+.countrySearch {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.countrySearch input {
+  min-width: 0;
+}
+
+.emptyCountryList {
+  padding: 12px 6px;
+  color: #667085;
+  text-align: center;
+}
+
 .countryRow {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) 44px auto;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
   padding: 6px;
@@ -206,6 +231,178 @@
   width: 28px;
   height: 28px;
   border: 1px solid #17202a;
+}
+
+.countrySummary {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.countrySummary strong,
+.countrySummary span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.countrySummary span {
+  color: #667085;
+  font-size: 12px;
+}
+
+.autonomyManager {
+  margin-top: 12px;
+  border-top: 1px solid #d5dbe3;
+  padding-top: 12px;
+}
+
+.autonomyManager summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.autonomyManager[open] summary {
+  margin-bottom: 12px;
+}
+
+.autonomyTypeList {
+  display: grid;
+  gap: 6px;
+  max-height: 32vh;
+  margin: 10px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.autonomyTypeRow,
+.customAutonomyTypeRow {
+  display: grid;
+  gap: 6px;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid #d5dbe3;
+}
+
+.autonomyTypeRow {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 28px;
+}
+
+.customAutonomyTypeRow {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 52px auto auto;
+}
+
+.customAutonomyTypeRow input {
+  min-width: 0;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  background: rgb(23 32 42 / 45%);
+}
+
+.editModal {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  border: 1px solid #aeb7c2;
+  background: #ffffff;
+}
+
+.modalForm {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.modalHeader,
+.modalActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.modalHeader {
+  border-bottom: 1px solid #d5dbe3;
+  padding-bottom: 12px;
+}
+
+.modalForm output {
+  min-height: 32px;
+  border: 1px solid #d5dbe3;
+  padding: 6px 8px;
+}
+
+.validationMessage {
+  color: #b42318;
+}
+
+.layerTypeFieldset {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid #d5dbe3;
+  padding: 10px;
+}
+
+.layerTypeFieldset legend {
+  padding: 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.layerTypeList {
+  display: grid;
+  gap: 6px;
+  max-height: 42vh;
+  overflow-y: auto;
+}
+
+.layerTypeOption {
+  grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr) 28px;
+  align-items: center;
+  border-bottom: 1px solid #e6e9ee;
+  padding: 6px 2px;
+}
+
+.layerTypeOption input {
+  min-height: auto;
+}
+
+.layerTypeOption small {
+  overflow: hidden;
+  color: #667085;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layerTypeOption strong {
+  text-align: right;
+}
+
+.opacityControl {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.opacityControl span {
+  grid-column: 1 / -1;
+}
+
+.opacityControl input {
+  width: 100%;
+}
+
+.opacityControl output {
+  min-width: 48px;
+  text-align: right;
 }
 
 .provinceInfo {
@@ -276,9 +473,15 @@
 @media (max-width: 900px) {
   .appShell {
     grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
   }
 
   .mapScroll {
     max-height: 60vh;
+  }
+
+  .sidePanel {
+    overflow-y: visible;
   }
 }

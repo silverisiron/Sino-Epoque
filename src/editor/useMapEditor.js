@@ -2,22 +2,53 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   drawProvinceOverlay,
   drawProvincesOverlay,
+  getSphereLayerAppearance,
 } from '../map/canvasRenderers'
 import { isWater } from '../map/mapData'
+import {
+  createDefaultAutonomyTypes,
+  DEFAULT_AUTONOMY_TYPE_ID,
+  normalizePreset,
+} from '../map/presetSchema'
+
+const DEFAULT_SPHERE_LAYER_SETTINGS = {
+  selectedTypeIds: [],
+  opacity: 90,
+}
+
+function createsOverlordCycle(countryId, overlordId, countries) {
+  const visited = new Set()
+  let currentCountryId = overlordId
+
+  while (currentCountryId) {
+    if (currentCountryId === countryId || visited.has(currentCountryId)) {
+      return true
+    }
+
+    visited.add(currentCountryId)
+    currentCountryId = countries[currentCountryId]?.overlordId ?? null
+  }
+
+  return false
+}
 
 export function useMapEditor({
   activePage,
   baseCanvasRef,
+  mapSize,
   mapScrollRef,
   overlayCanvasRef,
   overlayImageDataRef,
   provinceByRgbRef,
   provincePixelCacheRef,
   redrawAllOverlay,
+  redrawSphereLayer,
   selectedPresetPath,
   setActivePage,
   setStatus,
   sourceImageDataRef,
+  sphereCanvasRef,
+  sphereImageDataRef,
   stateByProvinceRef,
   statesByIdRef,
 }) {
@@ -25,27 +56,40 @@ export function useMapEditor({
   const isPaintingRef = useRef(false)
   const lastPaintedProvinceRef = useRef(null)
   const panRef = useRef(null)
+  const sphereLayerSettingsRef = useRef(DEFAULT_SPHERE_LAYER_SETTINGS)
 
   const [activeTool, setActiveTool] = useState('paint')
   const [paintMode, setPaintMode] = useState('multi')
   const [paintUnit, setPaintUnit] = useState('state')
+  const [autonomyTypes, setAutonomyTypes] = useState(() => createDefaultAutonomyTypes())
   const [countries, setCountries] = useState({
-    '#d94645': { name: '국가 1' },
+    country_1: {
+      name: '국가 1',
+      color: '#d94645',
+      autonomyTypeId: DEFAULT_AUTONOMY_TYPE_ID,
+      overlordId: null,
+    },
   })
-  const [activeColor, setActiveColor] = useState('#d94645')
+  const [countryOrder, setCountryOrder] = useState(['country_1'])
+  const [activeCountryId, setActiveCountryId] = useState('country_1')
   const [assignments, setAssignments] = useState({})
   const [selectedProvince, setSelectedProvince] = useState(null)
   const [selectedState, setSelectedState] = useState(null)
+  const [sphereLayerSettings, setSphereLayerSettings] = useState(
+    DEFAULT_SPHERE_LAYER_SETTINGS,
+  )
 
-  const activeCountry = countries[activeColor]
+  const activeCountry = countries[activeCountryId]
   const preset = useMemo(
     () => ({
-      version: 1,
+      version: 2,
       baseMap: 'base',
+      autonomyTypes,
       countries,
+      countryOrder,
       provinceAssignments: assignments,
     }),
-    [assignments, countries],
+    [assignments, autonomyTypes, countries, countryOrder],
   )
 
   useEffect(() => {
@@ -55,6 +99,47 @@ export function useMapEditor({
   useEffect(() => {
     redrawAllOverlay(assignmentsRef.current, countries)
   }, [countries, redrawAllOverlay])
+
+  useEffect(() => {
+    sphereLayerSettingsRef.current = sphereLayerSettings
+    redrawSphereLayer(
+      assignmentsRef.current,
+      countries,
+      autonomyTypes,
+      sphereLayerSettings,
+    )
+  }, [autonomyTypes, countries, mapSize, redrawSphereLayer, sphereLayerSettings])
+
+  function drawSphereForProvinces(provinces, countryId) {
+    const appearance = countryId
+      ? getSphereLayerAppearance(
+          countryId,
+          countries,
+          autonomyTypes,
+          sphereLayerSettingsRef.current,
+        )
+      : null
+
+    if (provinces.length > 1) {
+      drawProvincesOverlay(
+        sphereCanvasRef.current,
+        sphereImageDataRef.current,
+        provincePixelCacheRef.current,
+        provinces,
+        appearance?.color ?? null,
+        appearance?.opacity ?? 1,
+      )
+    } else {
+      drawProvinceOverlay(
+        sphereCanvasRef.current,
+        sphereImageDataRef.current,
+        provincePixelCacheRef.current,
+        provinces[0],
+        appearance?.color ?? null,
+        appearance?.opacity ?? 1,
+      )
+    }
+  }
 
   function getProvinceFromPointer(event) {
     const sourceImageData = sourceImageDataRef.current
@@ -68,7 +153,7 @@ export function useMapEditor({
     const x = Math.floor(((event.clientX - rect.left) / rect.width) * canvas.width)
     const y = Math.floor(((event.clientY - rect.top) / rect.height) * canvas.height)
     const pixelIndex = (y * canvas.width + x) * 4
-    const data = sourceImageDataRef.current.data
+    const data = sourceImageData.data
     const rgb = `${data[pixelIndex]},${data[pixelIndex + 1]},${data[pixelIndex + 2]}`
     const province = provinceByRgbRef.current.get(rgb)
 
@@ -76,11 +161,7 @@ export function useMapEditor({
   }
 
   function applyToolToProvince(clicked) {
-    if (!clicked?.province) {
-      return
-    }
-
-    if (lastPaintedProvinceRef.current === clicked.province.id) {
+    if (!clicked?.province || lastPaintedProvinceRef.current === clicked.province.id) {
       return
     }
 
@@ -110,11 +191,12 @@ export function useMapEditor({
       if (activeTool === 'erase') {
         delete nextAssignments[province.id]
       } else {
-        nextAssignments[province.id] = activeColor
+        nextAssignments[province.id] = activeCountryId
       }
     }
 
     assignmentsRef.current = nextAssignments
+    const overlayColor = activeTool === 'erase' ? null : activeCountry.color
 
     if (landProvinces.length > 1) {
       drawProvincesOverlay(
@@ -122,7 +204,7 @@ export function useMapEditor({
         overlayImageDataRef.current,
         provincePixelCacheRef.current,
         landProvinces,
-        activeTool === 'erase' ? null : activeColor,
+        overlayColor,
       )
     } else {
       drawProvinceOverlay(
@@ -130,11 +212,16 @@ export function useMapEditor({
         overlayImageDataRef.current,
         provincePixelCacheRef.current,
         clicked.province,
-        activeTool === 'erase' ? null : activeColor,
+        overlayColor,
       )
     }
 
-    setAssignments(assignmentsRef.current)
+    drawSphereForProvinces(
+      landProvinces,
+      activeTool === 'erase' ? null : activeCountryId,
+    )
+
+    setAssignments(nextAssignments)
   }
 
   function handlePointerDown(event) {
@@ -184,74 +271,162 @@ export function useMapEditor({
   }
 
   function addCountry() {
+    let countryNumber = countryOrder.length + 1
+    let countryId = `country_${countryNumber}`
+
+    while (countries[countryId]) {
+      countryNumber += 1
+      countryId = `country_${countryNumber}`
+    }
+
     let color = '#4f46e5'
-    let step = 0
+    let colorStep = 0
+    const usedColors = new Set(Object.values(countries).map((country) => country.color.toLowerCase()))
 
-    while (countries[color]) {
-      step += 1
-      color = `#${((0x4f46e5 + step * 0x12345) & 0xffffff).toString(16).padStart(6, '0')}`
+    while (usedColors.has(color)) {
+      colorStep += 1
+      color = `#${((0x4f46e5 + colorStep * 0x12345) & 0xffffff).toString(16).padStart(6, '0')}`
     }
 
     setCountries((currentCountries) => ({
       ...currentCountries,
-      [color]: { name: `국가 ${Object.keys(currentCountries).length + 1}` },
+      [countryId]: {
+        name: `국가 ${countryNumber}`,
+        color,
+        autonomyTypeId: DEFAULT_AUTONOMY_TYPE_ID,
+        overlordId: null,
+      },
     }))
-    setActiveColor(color)
+    setCountryOrder((currentOrder) => [...currentOrder, countryId])
+    setActiveCountryId(countryId)
   }
 
-  function updateCountryName(color, name) {
-    setCountries((currentCountries) => ({
-      ...currentCountries,
-      [color]: { name },
-    }))
-  }
+  function updateCountry(countryId, nextCountry) {
+    const autonomyType = autonomyTypes[nextCountry.autonomyTypeId]
+    const normalizedColor = nextCountry.color.toLowerCase()
+    const colorIsUsed = Object.entries(countries).some(
+      ([otherCountryId, country]) =>
+        otherCountryId !== countryId && country.color.toLowerCase() === normalizedColor,
+    )
 
-  function updateCountryColor(previousColor, nextColor) {
-    if (!nextColor || countries[nextColor]) {
-      return
+    if (!autonomyType || colorIsUsed) {
+      setStatus(colorIsUsed ? '이미 사용 중인 국가 색상입니다.' : '유효하지 않은 자치도 유형입니다.')
+      return false
     }
 
-    setCountries((currentCountries) => {
-      const nextCountries = {}
+    const overlordId = autonomyType.autonomy < 10 ? nextCountry.overlordId : null
 
-      for (const [color, country] of Object.entries(currentCountries)) {
-        nextCountries[color === previousColor ? nextColor : color] = country
-      }
+    if (
+      autonomyType.autonomy < 10 &&
+      (!overlordId || !countries[overlordId] || createsOverlordCycle(countryId, overlordId, countries))
+    ) {
+      setStatus('종속국은 순환되지 않는 유효한 종주국을 선택해야 합니다.')
+      return false
+    }
 
-      return nextCountries
-    })
-    setAssignments((currentAssignments) => {
-      const nextAssignments = {}
-
-      for (const [provinceId, color] of Object.entries(currentAssignments)) {
-        nextAssignments[provinceId] = color === previousColor ? nextColor : color
-      }
-
-      assignmentsRef.current = nextAssignments
-      return nextAssignments
-    })
-    setActiveColor(nextColor)
+    setCountries((currentCountries) => ({
+      ...currentCountries,
+      [countryId]: {
+        ...currentCountries[countryId],
+        ...nextCountry,
+        color: normalizedColor,
+        overlordId,
+      },
+    }))
+    setStatus('국가 정보가 적용되었습니다.')
+    return true
   }
 
-  function reorderCountries(orderedColors) {
-    setCountries((currentCountries) => {
-      const nextCountries = {}
-      const includedColors = new Set(orderedColors)
+  function reorderCountries(orderedCountryIds) {
+    const knownCountryIds = new Set(Object.keys(countries))
+    setCountryOrder(orderedCountryIds.filter((countryId) => knownCountryIds.has(countryId)))
+  }
 
-      for (const color of orderedColors) {
-        if (currentCountries[color]) {
-          nextCountries[color] = currentCountries[color]
+  function applySphereLayerSettings(nextSettings) {
+    const selectedTypeIds = nextSettings.selectedTypeIds.filter(
+      (typeId) => autonomyTypes[typeId]?.autonomy < 10,
+    )
+    const opacity = Math.min(100, Math.max(0, Number(nextSettings.opacity) || 0))
+    setSphereLayerSettings({ selectedTypeIds, opacity })
+  }
+
+  function addAutonomyType() {
+    let typeNumber = 1
+    let typeId = `custom_${typeNumber}`
+
+    while (autonomyTypes[typeId]) {
+      typeNumber += 1
+      typeId = `custom_${typeNumber}`
+    }
+
+    setAutonomyTypes((currentTypes) => ({
+      ...currentTypes,
+      [typeId]: {
+        name: `새 자치도 유형 ${typeNumber}`,
+        englishName: '',
+        autonomy: 5,
+        builtIn: false,
+      },
+    }))
+  }
+
+  function updateAutonomyType(typeId, nextType) {
+    if (autonomyTypes[typeId]?.builtIn) {
+      return false
+    }
+
+    const autonomy = Math.min(10, Math.max(1, Number.parseInt(nextType.autonomy, 10) || 1))
+    const countriesUsingType = Object.entries(countries).filter(
+      ([, country]) => country.autonomyTypeId === typeId,
+    )
+
+    if (autonomy < 10 && countriesUsingType.some(([, country]) => !country.overlordId)) {
+      setStatus('이 유형을 사용하는 국가에 먼저 종주국을 지정해야 합니다.')
+      return false
+    }
+
+    setAutonomyTypes((currentTypes) => ({
+      ...currentTypes,
+      [typeId]: {
+        name: nextType.name.trim() || typeId,
+        englishName: nextType.englishName.trim(),
+        autonomy,
+        builtIn: false,
+      },
+    }))
+
+    if (autonomy === 10 && countriesUsingType.length > 0) {
+      setCountries((currentCountries) => {
+        const nextCountries = { ...currentCountries }
+
+        for (const [countryId, country] of countriesUsingType) {
+          nextCountries[countryId] = { ...country, overlordId: null }
         }
-      }
 
-      for (const [color, country] of Object.entries(currentCountries)) {
-        if (!includedColors.has(color)) {
-          nextCountries[color] = country
-        }
-      }
+        return nextCountries
+      })
+    }
 
-      return nextCountries
+    setStatus('자치도 유형이 적용되었습니다.')
+    return true
+  }
+
+  function deleteAutonomyType(typeId) {
+    if (
+      autonomyTypes[typeId]?.builtIn ||
+      Object.values(countries).some((country) => country.autonomyTypeId === typeId)
+    ) {
+      setStatus('기본 유형 또는 사용 중인 자치도 유형은 삭제할 수 없습니다.')
+      return false
+    }
+
+    setAutonomyTypes((currentTypes) => {
+      const nextTypes = { ...currentTypes }
+      delete nextTypes[typeId]
+      return nextTypes
     })
+    setStatus('자치도 유형이 삭제되었습니다.')
+    return true
   }
 
   function removeAssignment() {
@@ -263,23 +438,23 @@ export function useMapEditor({
       const nextAssignments = { ...currentAssignments }
       const stateId = stateByProvinceRef.current.get(selectedProvince.province.id)
       const selectedProvinceState = stateId ? statesByIdRef.current.get(stateId) : null
+      const provincesToClear =
+        paintUnit === 'state' && selectedProvinceState
+          ? selectedProvinceState.provinces
+          : [selectedProvince.province]
 
-      if (paintUnit === 'state' && selectedProvinceState) {
-        for (const province of selectedProvinceState.provinces) {
-          delete nextAssignments[province.id]
-        }
-      } else {
-        delete nextAssignments[selectedProvince.province.id]
+      for (const province of provincesToClear) {
+        delete nextAssignments[province.id]
       }
 
       assignmentsRef.current = nextAssignments
 
-      if (paintUnit === 'state' && selectedProvinceState) {
+      if (provincesToClear.length > 1) {
         drawProvincesOverlay(
           overlayCanvasRef.current,
           overlayImageDataRef.current,
           provincePixelCacheRef.current,
-          selectedProvinceState.provinces,
+          provincesToClear,
           null,
         )
       } else {
@@ -291,6 +466,7 @@ export function useMapEditor({
           null,
         )
       }
+      drawSphereForProvinces(provincesToClear, null)
 
       return nextAssignments
     })
@@ -308,25 +484,39 @@ export function useMapEditor({
       return
     }
 
-    const presetJson = await response.json()
-    assignmentsRef.current = presetJson.provinceAssignments ?? {}
-    setCountries(presetJson.countries ?? {})
-    setAssignments(assignmentsRef.current)
-    redrawAllOverlay(assignmentsRef.current, presetJson.countries ?? {})
-    setActiveColor(Object.keys(presetJson.countries ?? {})[0] ?? '')
+    const normalizedPreset = normalizePreset(await response.json())
+    assignmentsRef.current = normalizedPreset.provinceAssignments
+    setAutonomyTypes(normalizedPreset.autonomyTypes)
+    setCountries(normalizedPreset.countries)
+    setCountryOrder(normalizedPreset.countryOrder)
+    setAssignments(normalizedPreset.provinceAssignments)
+    redrawAllOverlay(normalizedPreset.provinceAssignments, normalizedPreset.countries)
+    redrawSphereLayer(
+      normalizedPreset.provinceAssignments,
+      normalizedPreset.countries,
+      normalizedPreset.autonomyTypes,
+      sphereLayerSettingsRef.current,
+    )
+    setActiveCountryId(normalizedPreset.countryOrder[0] ?? '')
     setActivePage('loader')
     setStatus('프리셋 로드 완료')
   }
 
-  const selectedCountryColor = selectedProvince?.province
+  const selectedCountryId = selectedProvince?.province
     ? assignments[selectedProvince.province.id]
     : null
-  const selectedCountry = selectedCountryColor ? countries[selectedCountryColor] : null
+  const selectedCountry = selectedCountryId ? countries[selectedCountryId] : null
 
   return {
-    activeColor,
+    activeCountryId,
     activeTool,
+    addAutonomyType,
+    addCountry,
+    autonomyTypes,
+    applySphereLayerSettings,
     countries,
+    countryOrder,
+    deleteAutonomyType,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
@@ -334,17 +524,17 @@ export function useMapEditor({
     paintMode,
     paintUnit,
     preset,
-    reorderCountries,
     removeAssignment,
+    reorderCountries,
     selectedCountry,
     selectedProvince,
     selectedState,
-    setActiveColor,
+    setActiveCountryId,
     setActiveTool,
     setPaintMode,
     setPaintUnit,
-    addCountry,
-    updateCountryColor,
-    updateCountryName,
+    sphereLayerSettings,
+    updateAutonomyType,
+    updateCountry,
   }
 }

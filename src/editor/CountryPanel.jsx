@@ -1,110 +1,191 @@
-import { useState } from 'react'
+import { useDeferredValue, useMemo, useState } from 'react'
 import styles from '../admin/AdminMapEditorPage.module.css'
 import { downloadJson } from '../map/mapData'
+import { AutonomyTypePanel } from './AutonomyTypePanel'
+import { CountryEditModal } from './CountryEditModal'
+import { CountryFilterModal } from './CountryFilterModal'
 
-function CountryRow({
-  activeColor,
-  color,
-  country,
-  draggedColor,
-  onCountryDragEnd,
-  onCountryDragStart,
-  onCountryColorChange,
-  onCountryDrop,
-  onCountryNameChange,
-  onSelectColor,
-}) {
-  const [draftColor, setDraftColor] = useState(color)
+const EMPTY_COUNTRY_FILTER = {
+  independentCountryId: '',
+  selectedTypeIds: [],
+}
 
-  function applyColor() {
-    if (draftColor !== color) {
-      onCountryColorChange(color, draftColor)
+function getTopIndependentCountryId(countryId, countries, autonomyTypes) {
+  const visited = new Set()
+  let currentCountryId = countryId
+
+  while (currentCountryId && !visited.has(currentCountryId)) {
+    visited.add(currentCountryId)
+    const country = countries[currentCountryId]
+
+    if (!country) {
+      return null
     }
+
+    if (autonomyTypes[country.autonomyTypeId]?.autonomy === 10) {
+      return currentCountryId
+    }
+
+    currentCountryId = country.overlordId
   }
 
+  return null
+}
+
+function CountryRow({
+  activeCountryId,
+  autonomyType,
+  country,
+  countryId,
+  draggedCountryId,
+  onCountryDragEnd,
+  onCountryDragStart,
+  onCountryDrop,
+  onEdit,
+  onSelectCountry,
+}) {
   return (
     <li
       className={styles.countryRow}
-      data-active={activeColor === color}
-      data-dragging={draggedColor === color}
+      data-active={activeCountryId === countryId}
+      data-dragging={draggedCountryId === countryId}
       draggable
       onDragEnd={onCountryDragEnd}
       onDragOver={(event) => event.preventDefault()}
-      onDragStart={(event) => onCountryDragStart(event, color)}
-      onDrop={(event) => onCountryDrop(event, color)}
+      onDragStart={(event) => onCountryDragStart(event, countryId)}
+      onDrop={(event) => onCountryDrop(event, countryId)}
     >
       <button
         type="button"
         className={styles.swatchButton}
-        style={{ backgroundColor: color }}
+        style={{ backgroundColor: country.color }}
         aria-label={`${country.name} 선택`}
-        onClick={() => onSelectColor(color)}
+        onClick={() => onSelectCountry(countryId)}
       />
-      <input
-        aria-label="국가 이름"
-        value={country.name}
-        onChange={(event) => onCountryNameChange(color, event.target.value)}
-      />
-      <input
-        aria-label="국가 색상"
-        type="color"
-        value={draftColor}
-        onChange={(event) => setDraftColor(event.target.value)}
-      />
-      <button type="button" onClick={applyColor} disabled={draftColor === color}>
-        적용
+      <div className={styles.countrySummary}>
+        <strong>{country.name}</strong>
+        <span>
+          {autonomyType.name} · {autonomyType.autonomy}
+        </span>
+      </div>
+      <button type="button" onClick={() => onEdit(countryId)}>
+        편집
       </button>
     </li>
   )
 }
 
 export function CountryPanel({
-  activeColor,
+  activeCountryId,
+  autonomyTypes,
   borderMode,
   countries,
+  countryOrder,
+  onAddAutonomyType,
   onAddCountry,
+  onAutonomyTypeDelete,
+  onAutonomyTypeUpdate,
   onBorderModeChange,
-  onCountryColorChange,
   onCountryOrderChange,
-  onCountryNameChange,
+  onCountryUpdate,
   onPaintModeChange,
   onPaintUnitChange,
-  onSelectColor,
+  onSelectCountry,
   paintMode,
   paintUnit,
   preset,
 }) {
-  const [draggedColor, setDraggedColor] = useState(null)
+  const [draggedCountryId, setDraggedCountryId] = useState(null)
+  const [editingCountryId, setEditingCountryId] = useState(null)
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [countryFilter, setCountryFilter] = useState(EMPTY_COUNTRY_FILTER)
+  const deferredSearchQuery = useDeferredValue(searchQuery)
 
-  function handleCountryDragStart(event, color) {
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/plain', color)
-    setDraggedColor(color)
+  const countrySearchIndex = useMemo(
+    () =>
+      new Map(
+        Object.entries(countries).map(([countryId, country]) => [
+          countryId,
+          country.name.normalize('NFKC').toLocaleLowerCase(),
+        ]),
+      ),
+    [countries],
+  )
+
+  const visibleCountryIds = useMemo(() => {
+    const normalizedQuery = deferredSearchQuery.trim().normalize('NFKC').toLocaleLowerCase()
+    const selectedTypeIds = new Set(countryFilter.selectedTypeIds)
+    const hasAutonomyFilter = selectedTypeIds.size > 0
+
+    return countryOrder.filter((countryId) => {
+      const country = countries[countryId]
+
+      if (!country || !countrySearchIndex.get(countryId)?.includes(normalizedQuery)) {
+        return false
+      }
+
+      if (!hasAutonomyFilter || !selectedTypeIds.has(country.autonomyTypeId)) {
+        return !hasAutonomyFilter
+      }
+
+      return (
+        !countryFilter.independentCountryId ||
+        getTopIndependentCountryId(countryId, countries, autonomyTypes) ===
+          countryFilter.independentCountryId
+      )
+    })
+  }, [
+    autonomyTypes,
+    countries,
+    countryFilter,
+    countryOrder,
+    countrySearchIndex,
+    deferredSearchQuery,
+  ])
+
+  function applyCountryFilter(nextFilter) {
+    const selectedTypeIds = nextFilter.selectedTypeIds.filter(
+      (typeId) => autonomyTypes[typeId]?.autonomy < 10,
+    )
+
+    setCountryFilter({
+      independentCountryId: selectedTypeIds.length > 0 ? nextFilter.independentCountryId : '',
+      selectedTypeIds,
+    })
   }
 
-  function handleCountryDrop(event, targetColor) {
-    event.preventDefault()
-    const sourceColor = event.dataTransfer.getData('text/plain') || draggedColor
+  function handleCountryDragStart(event, countryId) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', countryId)
+    setDraggedCountryId(countryId)
+  }
 
-    if (!sourceColor || sourceColor === targetColor) {
-      setDraggedColor(null)
+  function handleCountryDrop(event, targetCountryId) {
+    event.preventDefault()
+    const sourceCountryId = event.dataTransfer.getData('text/plain') || draggedCountryId
+
+    if (!sourceCountryId || sourceCountryId === targetCountryId) {
+      setDraggedCountryId(null)
       return
     }
 
-    const orderedColors = Object.keys(countries)
-    const sourceIndex = orderedColors.indexOf(sourceColor)
-    const targetIndex = orderedColors.indexOf(targetColor)
+    const orderedCountryIds = [...countryOrder]
+    const sourceIndex = orderedCountryIds.indexOf(sourceCountryId)
+    const targetIndex = orderedCountryIds.indexOf(targetCountryId)
 
     if (sourceIndex === -1 || targetIndex === -1) {
-      setDraggedColor(null)
+      setDraggedCountryId(null)
       return
     }
 
-    orderedColors.splice(sourceIndex, 1)
-    orderedColors.splice(targetIndex, 0, sourceColor)
-    onCountryOrderChange(orderedColors)
-    setDraggedColor(null)
+    orderedCountryIds.splice(sourceIndex, 1)
+    orderedCountryIds.splice(targetIndex, 0, sourceCountryId)
+    onCountryOrderChange(orderedCountryIds)
+    setDraggedCountryId(null)
   }
+
+  const editingCountry = editingCountryId ? countries[editingCountryId] : null
 
   return (
     <section aria-labelledby="countries-title">
@@ -173,31 +254,89 @@ export function CountryPanel({
         </button>
       </div>
 
+      <div className={styles.countrySearch}>
+        <input
+          aria-label="국가 검색"
+          placeholder="국가 검색"
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+        />
+        <button
+          type="button"
+          aria-pressed={countryFilter.selectedTypeIds.length > 0}
+          onClick={() => setIsFilterModalOpen(true)}
+        >
+          필터
+        </button>
+      </div>
+
       <ul className={styles.countryList}>
-        {Object.entries(countries).map(([color, country]) => (
-          <CountryRow
-            activeColor={activeColor}
-            color={color}
-            country={country}
-            draggedColor={draggedColor}
-            key={color}
-            onCountryDragEnd={() => setDraggedColor(null)}
-            onCountryDragStart={handleCountryDragStart}
-            onCountryColorChange={onCountryColorChange}
-            onCountryDrop={handleCountryDrop}
-            onCountryNameChange={onCountryNameChange}
-            onSelectColor={onSelectColor}
-          />
-        ))}
+        {visibleCountryIds.map((countryId) => {
+          const country = countries[countryId]
+
+          if (!country) {
+            return null
+          }
+
+          return (
+            <CountryRow
+              activeCountryId={activeCountryId}
+              autonomyType={autonomyTypes[country.autonomyTypeId] ?? autonomyTypes.independent}
+              country={country}
+              countryId={countryId}
+              draggedCountryId={draggedCountryId}
+              key={countryId}
+              onCountryDragEnd={() => setDraggedCountryId(null)}
+              onCountryDragStart={handleCountryDragStart}
+              onCountryDrop={handleCountryDrop}
+              onEdit={setEditingCountryId}
+              onSelectCountry={onSelectCountry}
+            />
+          )
+        })}
+        {visibleCountryIds.length === 0 ? (
+          <li className={styles.emptyCountryList}>검색 결과가 없습니다.</li>
+        ) : null}
       </ul>
+
+      <AutonomyTypePanel
+        autonomyTypes={autonomyTypes}
+        countries={countries}
+        onAdd={onAddAutonomyType}
+        onDelete={onAutonomyTypeDelete}
+        onUpdate={onAutonomyTypeUpdate}
+      />
 
       <button
         type="button"
         className={styles.fullButton}
         onClick={() => downloadJson('map-preset.json', preset)}
       >
-         JSON으로 프리셋 저장하기
+        JSON으로 프리셋 저장하기
       </button>
+
+      {editingCountry ? (
+        <CountryEditModal
+          autonomyTypes={autonomyTypes}
+          countries={countries}
+          country={editingCountry}
+          countryId={editingCountryId}
+          countryOrder={countryOrder}
+          onApply={(nextCountry) => onCountryUpdate(editingCountryId, nextCountry)}
+          onClose={() => setEditingCountryId(null)}
+        />
+      ) : null}
+
+      {isFilterModalOpen ? (
+        <CountryFilterModal
+          autonomyTypes={autonomyTypes}
+          countries={countries}
+          onApply={applyCountryFilter}
+          onClose={() => setIsFilterModalOpen(false)}
+          settings={countryFilter}
+        />
+      ) : null}
     </section>
   )
 }

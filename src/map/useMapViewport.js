@@ -5,6 +5,8 @@ const WHEEL_ZOOM_SENSITIVITY = 0.001
 
 export function useMapViewport(mapSize) {
   const mapScrollRef = useRef(null)
+  const mapSizeRef = useRef(mapSize)
+  const minZoomRef = useRef(0)
   const zoomRef = useRef(0)
   const wheelDeltaRef = useRef(0)
   const wheelAnchorRef = useRef(null)
@@ -21,32 +23,37 @@ export function useMapViewport(mapSize) {
     return Math.min(viewportSize.width / mapSize.width, viewportSize.height / mapSize.height)
   }, [mapSize, viewportSize])
 
-  const updateZoom = useCallback(
-    (nextZoom, anchor) => {
-      const scrollContainer = mapScrollRef.current
-      const currentZoom = zoomRef.current
-      const clampedZoom = clampZoom(nextZoom, minZoom)
+  useEffect(() => {
+    mapSizeRef.current = mapSize
+  }, [mapSize])
 
-      if (!scrollContainer || !mapSize || clampedZoom === currentZoom) {
-        return
-      }
+  useEffect(() => {
+    minZoomRef.current = minZoom
+  }, [minZoom])
 
-      const rect = scrollContainer.getBoundingClientRect()
-      const anchorX = anchor ? anchor.clientX - rect.left : rect.width / 2
-      const anchorY = anchor ? anchor.clientY - rect.top : rect.height / 2
-      const mapX = (scrollContainer.scrollLeft + anchorX) / currentZoom
-      const mapY = (scrollContainer.scrollTop + anchorY) / currentZoom
+  const updateZoom = useCallback((nextZoom, anchor) => {
+    const scrollContainer = mapScrollRef.current
+    const currentZoom = zoomRef.current
+    const clampedZoom = clampZoom(nextZoom, minZoomRef.current)
 
-      zoomRef.current = clampedZoom
-      setZoom(clampedZoom)
+    if (!scrollContainer || !mapSizeRef.current || clampedZoom === currentZoom) {
+      return
+    }
 
-      requestAnimationFrame(() => {
-        scrollContainer.scrollLeft = mapX * clampedZoom - anchorX
-        scrollContainer.scrollTop = mapY * clampedZoom - anchorY
-      })
-    },
-    [mapSize, minZoom],
-  )
+    const rect = scrollContainer.getBoundingClientRect()
+    const anchorX = anchor ? anchor.clientX - rect.left : rect.width / 2
+    const anchorY = anchor ? anchor.clientY - rect.top : rect.height / 2
+    const mapX = (scrollContainer.scrollLeft + anchorX) / currentZoom
+    const mapY = (scrollContainer.scrollTop + anchorY) / currentZoom
+
+    zoomRef.current = clampedZoom
+    setZoom(clampedZoom)
+
+    requestAnimationFrame(() => {
+      scrollContainer.scrollLeft = mapX * clampedZoom - anchorX
+      scrollContainer.scrollTop = mapY * clampedZoom - anchorY
+    })
+  }, [])
 
   useEffect(() => {
     const scrollContainer = mapScrollRef.current
@@ -89,7 +96,7 @@ export function useMapViewport(mapSize) {
     function handleNativeWheel(event) {
       event.preventDefault()
       wheelDeltaRef.current += event.deltaY
-      wheelAnchorRef.current = event
+      wheelAnchorRef.current = { clientX: event.clientX, clientY: event.clientY }
 
       if (wheelFrameRef.current !== null) {
         return
@@ -114,6 +121,10 @@ export function useMapViewport(mapSize) {
       if (wheelFrameRef.current !== null) {
         cancelAnimationFrame(wheelFrameRef.current)
       }
+
+      wheelFrameRef.current = null
+      wheelDeltaRef.current = 0
+      wheelAnchorRef.current = null
     }
   }, [updateZoom])
 

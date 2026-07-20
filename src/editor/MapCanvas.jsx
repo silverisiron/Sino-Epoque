@@ -9,6 +9,7 @@ export function MapCanvas({
   mapScrollRef,
   mapSize,
   onActiveToolChange,
+  onOpenSphereLayer,
   onPointerDown,
   onPointerMove,
   onPointerUp,
@@ -16,6 +17,8 @@ export function MapCanvas({
   onZoomOut,
   overlayCanvasRef,
   page,
+  sphereCanvasRef,
+  sphereLayerActive,
   zoom,
 }) {
   return (
@@ -29,6 +32,13 @@ export function MapCanvas({
           </p>
         </div>
         <div className={styles.mapTools} role="toolbar" aria-label="지도 도구">
+          <button
+            type="button"
+            aria-pressed={sphereLayerActive}
+            onClick={onOpenSphereLayer}
+          >
+            레이어
+          </button>
           <div className={styles.toolGroup} role="group" aria-label="도구">
             <button
               type="button"
@@ -77,6 +87,7 @@ export function MapCanvas({
               aria-label="프로빈스 백지도"
             />
             <canvas ref={overlayCanvasRef} className={styles.provinceOverlay} aria-hidden="true" />
+            <canvas ref={sphereCanvasRef} className={styles.sphereOverlay} aria-hidden="true" />
             <canvas ref={borderCanvasRef} className={styles.provinceBorder} aria-hidden="true" />
           </div>
         </div>

@@ -9,6 +9,7 @@
     "prebuild": "node scripts/build-states-index.mjs",
     "build": "vite build",
     "lint": "eslint .",
+    "migrate:presets": "node scripts/migrate-presets-v2.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

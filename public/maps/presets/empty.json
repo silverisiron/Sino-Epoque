@@ -1,6 +1,69 @@
 {
-  "version": 1,
+  "version": 2,
   "baseMap": "base",
+  "autonomyTypes": {
+    "independent": {
+      "name": "독립국",
+      "englishName": "Independent",
+      "autonomy": 10,
+      "builtIn": true
+    },
+    "personal_union": {
+      "name": "동군연합",
+      "englishName": "Personal Union",
+      "autonomy": 9,
+      "builtIn": true
+    },
+    "dominion": {
+      "name": "자치령",
+      "englishName": "Dominion",
+      "autonomy": 8,
+      "builtIn": true
+    },
+    "protectorate": {
+      "name": "피보호국",
+      "englishName": "Protectorate",
+      "autonomy": 7,
+      "builtIn": true
+    },
+    "chartered_company": {
+      "name": "특허 회사",
+      "englishName": "Chartered Company",
+      "autonomy": 6,
+      "builtIn": true
+    },
+    "puppet": {
+      "name": "괴뢰국",
+      "englishName": "Puppet",
+      "autonomy": 5,
+      "builtIn": true
+    },
+    "colony": {
+      "name": "식민지",
+      "englishName": "Colony",
+      "autonomy": 4,
+      "builtIn": true
+    },
+    "crown_colony": {
+      "name": "직할 식민지",
+      "englishName": "Crown Colony",
+      "autonomy": 3,
+      "builtIn": true
+    },
+    "occupied": {
+      "name": "점령지",
+      "englishName": "Occupied",
+      "autonomy": 2,
+      "builtIn": true
+    },
+    "integrated": {
+      "name": "본토화",
+      "englishName": "Integrated",
+      "autonomy": 1,
+      "builtIn": true
+    }
+  },
   "countries": {},
+  "countryOrder": [],
   "provinceAssignments": {}
 }

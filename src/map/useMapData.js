@@ -4,6 +4,7 @@ import {
   drawAllOverlay,
   drawBlankMap,
   drawBorderMap,
+  drawSphereLayer,
 } from './canvasRenderers'
 import {
   DEFINITION_PATH,
@@ -16,9 +17,11 @@ import { parseDefinitionCsv, waitForPaint } from './mapData'
 export function useMapData(borderMode) {
   const baseCanvasRef = useRef(null)
   const overlayCanvasRef = useRef(null)
+  const sphereCanvasRef = useRef(null)
   const borderCanvasRef = useRef(null)
   const sourceImageDataRef = useRef(null)
   const overlayImageDataRef = useRef(null)
+  const sphereImageDataRef = useRef(null)
   const provinceByRgbRef = useRef(new Map())
   const provinceByIdRef = useRef(new Map())
   const provincePixelCacheRef = useRef(new Map())
@@ -39,6 +42,18 @@ export function useMapData(borderMode) {
       provinceByIdRef.current,
       assignments,
       countries,
+    )
+  }, [])
+
+  const redrawSphereLayer = useCallback((assignments, countries, autonomyTypes, settings) => {
+    drawSphereLayer(
+      sphereCanvasRef.current,
+      sphereImageDataRef.current,
+      provincePixelCacheRef.current,
+      assignments,
+      countries,
+      autonomyTypes,
+      settings,
     )
   }, [])
 
@@ -96,6 +111,7 @@ export function useMapData(borderMode) {
 
         const baseCanvas = baseCanvasRef.current
         const overlayCanvas = overlayCanvasRef.current
+        const sphereCanvas = sphereCanvasRef.current
         const borderCanvas = borderCanvasRef.current
         const baseContext = baseCanvas.getContext('2d', { willReadFrequently: true })
 
@@ -103,6 +119,8 @@ export function useMapData(borderMode) {
         baseCanvas.height = image.naturalHeight
         overlayCanvas.width = image.naturalWidth
         overlayCanvas.height = image.naturalHeight
+        sphereCanvas.width = image.naturalWidth
+        sphereCanvas.height = image.naturalHeight
         borderCanvas.width = image.naturalWidth
         borderCanvas.height = image.naturalHeight
 
@@ -111,6 +129,7 @@ export function useMapData(borderMode) {
         const sourceImageData = baseContext.getImageData(0, 0, baseCanvas.width, baseCanvas.height)
         sourceImageDataRef.current = sourceImageData
         overlayImageDataRef.current = new ImageData(baseCanvas.width, baseCanvas.height)
+        sphereImageDataRef.current = new ImageData(baseCanvas.width, baseCanvas.height)
         provincePixelCacheRef.current = buildProvincePixelCache(sourceImageData, provinceByRgb)
 
         await waitForPaint()
@@ -177,10 +196,13 @@ export function useMapData(borderMode) {
     provinceByRgbRef,
     provincePixelCacheRef,
     redrawAllOverlay,
+    redrawSphereLayer,
     selectedPresetPath,
     setSelectedPresetPath,
     setStatus,
     sourceImageDataRef,
+    sphereCanvasRef,
+    sphereImageDataRef,
     stateByProvinceRef,
     statesByIdRef,
     status,

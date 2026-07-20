@@ -1,19 +1,19 @@
 import { useState } from 'react'
 import styles from '../admin/AdminMapEditorPage.module.css'
+import { DataManager } from './DataManager'
 
-function AutonomyTypeRow({ inUse, onDelete, onUpdate, type, typeId }) {
+function NumericTypeRow({ inUse, onDelete, onUpdate, type, typeId, valueKey, valueLabel }) {
   const [draft, setDraft] = useState({ ...type })
-
   const normalizedDraft = {
     name: draft.name.trim() || typeId,
     englishName: draft.englishName.trim(),
-    autonomy: Math.min(10, Math.max(1, Number.parseInt(draft.autonomy, 10) || 1)),
+    [valueKey]: Math.min(10, Math.max(1, Number.parseInt(draft[valueKey], 10) || 1)),
     builtIn: false,
   }
   const hasChanges =
     normalizedDraft.name !== type.name ||
     normalizedDraft.englishName !== type.englishName ||
-    normalizedDraft.autonomy !== type.autonomy
+    normalizedDraft[valueKey] !== type[valueKey]
 
   function applyChanges() {
     if (onUpdate(typeId, normalizedDraft)) {
@@ -23,38 +23,38 @@ function AutonomyTypeRow({ inUse, onDelete, onUpdate, type, typeId }) {
 
   if (type.builtIn) {
     return (
-      <li className={styles.autonomyTypeRow}>
+      <li className={styles.dataTypeRow}>
         <span>{type.name}</span>
         <span>{type.englishName}</span>
-        <strong>{type.autonomy}</strong>
+        <strong>{type[valueKey]}</strong>
       </li>
     )
   }
 
   return (
-    <li className={styles.customAutonomyTypeRow}>
+    <li className={styles.customDataTypeRow}>
       <input
-        aria-label="자치도 유형 이름"
+        aria-label={`${valueLabel} 이름`}
         value={draft.name}
         onChange={(event) =>
           setDraft((currentDraft) => ({ ...currentDraft, name: event.target.value }))
         }
       />
       <input
-        aria-label="자치도 유형 영문 이름"
+        aria-label={`${valueLabel} 영문 이름`}
         value={draft.englishName}
         onChange={(event) =>
           setDraft((currentDraft) => ({ ...currentDraft, englishName: event.target.value }))
         }
       />
       <input
-        aria-label="자치도 수치"
+        aria-label={`${valueLabel} 수치`}
         type="number"
         min="1"
         max="10"
-        value={draft.autonomy}
+        value={draft[valueKey]}
         onChange={(event) =>
-          setDraft((currentDraft) => ({ ...currentDraft, autonomy: event.target.value }))
+          setDraft((currentDraft) => ({ ...currentDraft, [valueKey]: event.target.value }))
         }
       />
       <button type="button" disabled={!hasChanges} onClick={applyChanges}>
@@ -67,30 +67,35 @@ function AutonomyTypeRow({ inUse, onDelete, onUpdate, type, typeId }) {
   )
 }
 
-export function AutonomyTypePanel({ autonomyTypes, countries, onAdd, onDelete, onUpdate }) {
+export function NumericTypePanel({
+  heading,
+  isInUse,
+  onAdd,
+  onDelete,
+  onUpdate,
+  summary,
+  types,
+  valueKey,
+  valueLabel,
+}) {
   return (
-    <details className={styles.autonomyManager}>
-      <summary>자치도 유형 관리</summary>
-      <div className={styles.sideHeader}>
-        <h2>Autonomy Types</h2>
-        <button type="button" onClick={onAdd}>
-          추가
-        </button>
-      </div>
-      <ul className={styles.autonomyTypeList}>
-        {Object.entries(autonomyTypes)
-          .sort(([, left], [, right]) => right.autonomy - left.autonomy)
+    <DataManager heading={heading} onAdd={onAdd} summary={summary}>
+      <ul className={styles.dataTypeList}>
+        {Object.entries(types)
+          .sort(([, left], [, right]) => right[valueKey] - left[valueKey])
           .map(([typeId, type]) => (
-            <AutonomyTypeRow
-              inUse={Object.values(countries).some((country) => country.autonomyTypeId === typeId)}
-              key={`${typeId}:${type.name}:${type.englishName}:${type.autonomy}`}
+            <NumericTypeRow
+              inUse={isInUse(typeId)}
+              key={`${typeId}:${type.name}:${type.englishName}:${type[valueKey]}`}
               onDelete={onDelete}
               onUpdate={onUpdate}
               type={type}
               typeId={typeId}
+              valueKey={valueKey}
+              valueLabel={valueLabel}
             />
           ))}
       </ul>
-    </details>
+    </DataManager>
   )
 }

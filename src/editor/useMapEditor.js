@@ -7,13 +7,45 @@ import {
 import { isWater } from '../map/mapData'
 import {
   createDefaultAutonomyTypes,
+  createDefaultPowerRankTypes,
   DEFAULT_AUTONOMY_TYPE_ID,
+  DEFAULT_POWER_RANK_TYPE_ID,
   normalizePreset,
 } from '../map/presetSchema'
+import { hasBlocMembershipConflict } from '../map/worldRelations'
 
 const DEFAULT_SPHERE_LAYER_SETTINGS = {
-  selectedTypeIds: [],
-  opacity: 90,
+  mode: 'autonomy',
+  selectedIdsByMode: {
+    autonomy: [],
+    powerRank: [],
+    powerBloc: [],
+  },
+  opacityByIdByMode: {
+    autonomy: {},
+    powerRank: {},
+    powerBloc: {},
+  },
+}
+
+function createCustomNumericType(types, name, valueKey, value) {
+  let typeNumber = 1
+  let typeId = `custom_${typeNumber}`
+
+  while (types[typeId]) {
+    typeNumber += 1
+    typeId = `custom_${typeNumber}`
+  }
+
+  return [
+    typeId,
+    {
+      name: `${name} ${typeNumber}`,
+      englishName: '',
+      [valueKey]: value,
+      builtIn: false,
+    },
+  ]
 }
 
 function createsOverlordCycle(countryId, overlordId, countries) {
@@ -62,11 +94,14 @@ export function useMapEditor({
   const [paintMode, setPaintMode] = useState('multi')
   const [paintUnit, setPaintUnit] = useState('state')
   const [autonomyTypes, setAutonomyTypes] = useState(() => createDefaultAutonomyTypes())
+  const [powerRankTypes, setPowerRankTypes] = useState(() => createDefaultPowerRankTypes())
+  const [powerBlocs, setPowerBlocs] = useState({})
   const [countries, setCountries] = useState({
     country_1: {
       name: '국가 1',
       color: '#d94645',
       autonomyTypeId: DEFAULT_AUTONOMY_TYPE_ID,
+      powerRankTypeId: DEFAULT_POWER_RANK_TYPE_ID,
       overlordId: null,
     },
   })
@@ -82,14 +117,16 @@ export function useMapEditor({
   const activeCountry = countries[activeCountryId]
   const preset = useMemo(
     () => ({
-      version: 2,
+      version: 3,
       baseMap: 'base',
       autonomyTypes,
+      powerRankTypes,
+      powerBlocs,
       countries,
       countryOrder,
       provinceAssignments: assignments,
     }),
-    [assignments, autonomyTypes, countries, countryOrder],
+    [assignments, autonomyTypes, countries, countryOrder, powerBlocs, powerRankTypes],
   )
 
   useEffect(() => {
@@ -106,9 +143,19 @@ export function useMapEditor({
       assignmentsRef.current,
       countries,
       autonomyTypes,
+      powerRankTypes,
+      powerBlocs,
       sphereLayerSettings,
     )
-  }, [autonomyTypes, countries, mapSize, redrawSphereLayer, sphereLayerSettings])
+  }, [
+    autonomyTypes,
+    countries,
+    mapSize,
+    powerBlocs,
+    powerRankTypes,
+    redrawSphereLayer,
+    sphereLayerSettings,
+  ])
 
   function drawSphereForProvinces(provinces, countryId) {
     const appearance = countryId
@@ -116,6 +163,8 @@ export function useMapEditor({
           countryId,
           countries,
           autonomyTypes,
+          powerRankTypes,
+          powerBlocs,
           sphereLayerSettingsRef.current,
         )
       : null
@@ -294,6 +343,7 @@ export function useMapEditor({
         name: `국가 ${countryNumber}`,
         color,
         autonomyTypeId: DEFAULT_AUTONOMY_TYPE_ID,
+        powerRankTypeId: DEFAULT_POWER_RANK_TYPE_ID,
         overlordId: null,
       },
     }))
@@ -303,14 +353,19 @@ export function useMapEditor({
 
   function updateCountry(countryId, nextCountry) {
     const autonomyType = autonomyTypes[nextCountry.autonomyTypeId]
+    const powerRankType = powerRankTypes[nextCountry.powerRankTypeId]
     const normalizedColor = nextCountry.color.toLowerCase()
     const colorIsUsed = Object.entries(countries).some(
       ([otherCountryId, country]) =>
         otherCountryId !== countryId && country.color.toLowerCase() === normalizedColor,
     )
 
-    if (!autonomyType || colorIsUsed) {
-      setStatus(colorIsUsed ? '이미 사용 중인 국가 색상입니다.' : '유효하지 않은 자치도 유형입니다.')
+    if (!autonomyType || !powerRankType || colorIsUsed) {
+      setStatus(
+        colorIsUsed
+          ? '이미 사용 중인 국가 색상입니다.'
+          : '유효하지 않은 자치도 유형 또는 국가 등급입니다.',
+      )
       return false
     }
 
@@ -324,15 +379,31 @@ export function useMapEditor({
       return false
     }
 
-    setCountries((currentCountries) => ({
-      ...currentCountries,
+    const isBlocLeader = Object.values(powerBlocs).some(
+      (bloc) => bloc.leaderCountryId === countryId,
+    )
+
+    if (isBlocLeader && (autonomyType.autonomy !== 10 || powerRankType.level < 7)) {
+      setStatus('세력 블록 대표국은 독립국이며 국가 등급이 7 이상이어야 합니다.')
+      return false
+    }
+
+    const nextCountries = {
+      ...countries,
       [countryId]: {
-        ...currentCountries[countryId],
+        ...countries[countryId],
         ...nextCountry,
         color: normalizedColor,
         overlordId,
       },
-    }))
+    }
+
+    if (hasBlocMembershipConflict(powerBlocs, nextCountries, autonomyTypes)) {
+      setStatus('변경하면 한 국가가 여러 세력 블록에 속하게 됩니다.')
+      return false
+    }
+
+    setCountries(nextCountries)
     setStatus('국가 정보가 적용되었습니다.')
     return true
   }
@@ -343,30 +414,62 @@ export function useMapEditor({
   }
 
   function applySphereLayerSettings(nextSettings) {
-    const selectedTypeIds = nextSettings.selectedTypeIds.filter(
-      (typeId) => autonomyTypes[typeId]?.autonomy < 10,
+    const mode = ['autonomy', 'powerRank', 'powerBloc'].includes(nextSettings.mode)
+      ? nextSettings.mode
+      : 'autonomy'
+    const availableIdsByMode = {
+      autonomy: new Set(
+        Object.entries(autonomyTypes)
+          .filter(([, type]) => type.autonomy < 10)
+          .map(([typeId]) => typeId),
+      ),
+      powerRank: new Set(Object.keys(powerRankTypes)),
+      powerBloc: new Set(Object.keys(powerBlocs)),
+    }
+    const selectedIdsByMode = Object.fromEntries(
+      Object.entries(availableIdsByMode).map(([layerMode, availableIds]) => [
+        layerMode,
+        (nextSettings.selectedIdsByMode?.[layerMode] ?? []).filter((id) =>
+          availableIds.has(id),
+        ),
+      ]),
     )
-    const opacity = Math.min(100, Math.max(0, Number(nextSettings.opacity) || 0))
-    setSphereLayerSettings({ selectedTypeIds, opacity })
+    const opacityByIdByMode = Object.fromEntries(
+      Object.entries(selectedIdsByMode).map(([layerMode, selectedIds]) => [
+        layerMode,
+        Object.fromEntries(
+          selectedIds.map((id) => {
+            const defaultOpacity =
+              layerMode === 'powerRank' ? powerRankTypes[id].level * 10 : 90
+            return [
+              id,
+              Math.min(
+                100,
+                Math.max(
+                  0,
+                  Number(nextSettings.opacityByIdByMode?.[layerMode]?.[id] ?? defaultOpacity),
+                ),
+              ),
+            ]
+          }),
+        ),
+      ]),
+    )
+
+    setSphereLayerSettings({ mode, selectedIdsByMode, opacityByIdByMode })
   }
 
   function addAutonomyType() {
-    let typeNumber = 1
-    let typeId = `custom_${typeNumber}`
-
-    while (autonomyTypes[typeId]) {
-      typeNumber += 1
-      typeId = `custom_${typeNumber}`
-    }
+    const [typeId, type] = createCustomNumericType(
+      autonomyTypes,
+      '새 자치도 유형',
+      'autonomy',
+      5,
+    )
 
     setAutonomyTypes((currentTypes) => ({
       ...currentTypes,
-      [typeId]: {
-        name: `새 자치도 유형 ${typeNumber}`,
-        englishName: '',
-        autonomy: 5,
-        builtIn: false,
-      },
+      [typeId]: type,
     }))
   }
 
@@ -382,6 +485,16 @@ export function useMapEditor({
 
     if (autonomy < 10 && countriesUsingType.some(([, country]) => !country.overlordId)) {
       setStatus('이 유형을 사용하는 국가에 먼저 종주국을 지정해야 합니다.')
+      return false
+    }
+
+    if (
+      autonomy < 10 &&
+      countriesUsingType.some(([countryId]) =>
+        Object.values(powerBlocs).some((bloc) => bloc.leaderCountryId === countryId),
+      )
+    ) {
+      setStatus('세력 블록 대표국이 사용하는 자치도 유형은 10이어야 합니다.')
       return false
     }
 
@@ -426,6 +539,127 @@ export function useMapEditor({
       return nextTypes
     })
     setStatus('자치도 유형이 삭제되었습니다.')
+    return true
+  }
+
+  function addPowerRankType() {
+    const [typeId, type] = createCustomNumericType(
+      powerRankTypes,
+      '새 국가 등급',
+      'level',
+      5,
+    )
+    setPowerRankTypes((currentTypes) => ({ ...currentTypes, [typeId]: type }))
+  }
+
+  function updatePowerRankType(typeId, nextType) {
+    if (powerRankTypes[typeId]?.builtIn) {
+      return false
+    }
+
+    const level = Math.min(10, Math.max(1, Number.parseInt(nextType.level, 10) || 1))
+    const countriesUsingType = Object.entries(countries).filter(
+      ([, country]) => country.powerRankTypeId === typeId,
+    )
+
+    if (
+      level < 7 &&
+      countriesUsingType.some(([countryId]) =>
+        Object.values(powerBlocs).some((bloc) => bloc.leaderCountryId === countryId),
+      )
+    ) {
+      setStatus('세력 블록 대표국이 사용하는 국가 등급은 7 이상이어야 합니다.')
+      return false
+    }
+
+    setPowerRankTypes((currentTypes) => ({
+      ...currentTypes,
+      [typeId]: {
+        name: nextType.name.trim() || typeId,
+        englishName: nextType.englishName.trim(),
+        level,
+        builtIn: false,
+      },
+    }))
+    setStatus('국가 등급이 적용되었습니다.')
+    return true
+  }
+
+  function deletePowerRankType(typeId) {
+    if (
+      powerRankTypes[typeId]?.builtIn ||
+      Object.values(countries).some((country) => country.powerRankTypeId === typeId)
+    ) {
+      setStatus('기본 유형 또는 사용 중인 국가 등급은 삭제할 수 없습니다.')
+      return false
+    }
+
+    setPowerRankTypes((currentTypes) => {
+      const nextTypes = { ...currentTypes }
+      delete nextTypes[typeId]
+      return nextTypes
+    })
+    setStatus('국가 등급이 삭제되었습니다.')
+    return true
+  }
+
+  function savePowerBloc(blocId, nextBloc) {
+    const leader = countries[nextBloc.leaderCountryId]
+    const leaderIsEligible =
+      autonomyTypes[leader?.autonomyTypeId]?.autonomy === 10 &&
+      powerRankTypes[leader?.powerRankTypeId]?.level >= 7
+
+    if (!nextBloc.name.trim() || !leaderIsEligible) {
+      setStatus('대표국은 독립국이며 국가 등급이 7 이상이어야 합니다.')
+      return false
+    }
+
+    const normalizedBloc = {
+      name: nextBloc.name.trim(),
+      leaderCountryId: nextBloc.leaderCountryId,
+      memberCountryIds: [...new Set(nextBloc.memberCountryIds)].filter(
+        (countryId) => countries[countryId] && countryId !== nextBloc.leaderCountryId,
+      ),
+    }
+    const nextPowerBlocs = { ...powerBlocs, [blocId]: normalizedBloc }
+
+    if (hasBlocMembershipConflict(nextPowerBlocs, countries, autonomyTypes)) {
+      setStatus('한 국가는 하나의 세력 블록에만 가입할 수 있습니다.')
+      return false
+    }
+
+    setPowerBlocs(nextPowerBlocs)
+    setStatus('세력 블록이 적용되었습니다.')
+    return true
+  }
+
+  function addPowerBloc(nextBloc) {
+    let blocNumber = 1
+    let blocId = `power_bloc_${blocNumber}`
+
+    while (powerBlocs[blocId]) {
+      blocNumber += 1
+      blocId = `power_bloc_${blocNumber}`
+    }
+
+    return savePowerBloc(blocId, nextBloc)
+  }
+
+  function updatePowerBloc(blocId, nextBloc) {
+    return powerBlocs[blocId] ? savePowerBloc(blocId, nextBloc) : false
+  }
+
+  function deletePowerBloc(blocId) {
+    if (!powerBlocs[blocId]) {
+      return false
+    }
+
+    setPowerBlocs((currentPowerBlocs) => {
+      const nextPowerBlocs = { ...currentPowerBlocs }
+      delete nextPowerBlocs[blocId]
+      return nextPowerBlocs
+    })
+    setStatus('세력 블록이 삭제되었습니다.')
     return true
   }
 
@@ -487,6 +721,8 @@ export function useMapEditor({
     const normalizedPreset = normalizePreset(await response.json())
     assignmentsRef.current = normalizedPreset.provinceAssignments
     setAutonomyTypes(normalizedPreset.autonomyTypes)
+    setPowerRankTypes(normalizedPreset.powerRankTypes)
+    setPowerBlocs(normalizedPreset.powerBlocs)
     setCountries(normalizedPreset.countries)
     setCountryOrder(normalizedPreset.countryOrder)
     setAssignments(normalizedPreset.provinceAssignments)
@@ -495,6 +731,8 @@ export function useMapEditor({
       normalizedPreset.provinceAssignments,
       normalizedPreset.countries,
       normalizedPreset.autonomyTypes,
+      normalizedPreset.powerRankTypes,
+      normalizedPreset.powerBlocs,
       sphereLayerSettingsRef.current,
     )
     setActiveCountryId(normalizedPreset.countryOrder[0] ?? '')
@@ -512,17 +750,23 @@ export function useMapEditor({
     activeTool,
     addAutonomyType,
     addCountry,
+    addPowerBloc,
+    addPowerRankType,
     autonomyTypes,
     applySphereLayerSettings,
     countries,
     countryOrder,
     deleteAutonomyType,
+    deletePowerBloc,
+    deletePowerRankType,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
     loadPreset,
     paintMode,
     paintUnit,
+    powerBlocs,
+    powerRankTypes,
     preset,
     removeAssignment,
     reorderCountries,
@@ -536,5 +780,7 @@ export function useMapEditor({
     sphereLayerSettings,
     updateAutonomyType,
     updateCountry,
+    updatePowerBloc,
+    updatePowerRankType,
   }
 }

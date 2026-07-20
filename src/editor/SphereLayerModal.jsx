@@ -3,55 +3,124 @@ import styles from '../admin/AdminMapEditorPage.module.css'
 import { EditorModal } from './EditorModal'
 import { LayerTypeFieldset } from './LayerTypeFieldset'
 
-export function SphereLayerModal({ autonomyTypes, onApply, onClose, settings }) {
-  const [selectedTypeIds, setSelectedTypeIds] = useState(settings.selectedTypeIds)
-  const [opacity, setOpacity] = useState(settings.opacity)
+const LAYER_MODES = [
+  ['autonomy', '자치도 유형'],
+  ['powerRank', '국가 등급'],
+  ['powerBloc', '세력 블록'],
+]
+
+export function SphereLayerModal({
+  autonomyTypes,
+  countries,
+  onApply,
+  onClose,
+  powerBlocs,
+  powerRankTypes,
+  settings,
+}) {
+  const [mode, setMode] = useState(settings.mode ?? 'autonomy')
+  const [selectedIdsByMode, setSelectedIdsByMode] = useState(
+    settings.selectedIdsByMode ?? {
+      autonomy: settings.selectedTypeIds ?? [],
+      powerRank: [],
+      powerBloc: [],
+    },
+  )
+  const [opacityByIdByMode, setOpacityByIdByMode] = useState(
+    settings.opacityByIdByMode ?? {
+      autonomy: settings.opacityByType ?? {},
+      powerRank: {},
+      powerBloc: {},
+    },
+  )
+  const powerBlocItems = Object.fromEntries(
+    Object.entries(powerBlocs).map(([blocId, bloc]) => [
+      blocId,
+      {
+        name: bloc.name,
+        englishName: countries[bloc.leaderCountryId]?.name ?? bloc.leaderCountryId,
+      },
+    ]),
+  )
+  const layerConfig = {
+    autonomy: {
+      defaultOpacity: 90,
+      filterItem: (type) => type.autonomy < 10,
+      items: autonomyTypes,
+      legend: '자치도 유형',
+      valueKey: 'autonomy',
+    },
+    powerRank: {
+      defaultOpacity: (type) => type.level * 10,
+      items: powerRankTypes,
+      legend: '국가 등급',
+      valueKey: 'level',
+    },
+    powerBloc: {
+      defaultOpacity: 90,
+      items: powerBlocItems,
+      legend: '세력 블록',
+    },
+  }[mode]
+
   function toggleType(typeId) {
-    setSelectedTypeIds((currentTypeIds) =>
-      currentTypeIds.includes(typeId)
-        ? currentTypeIds.filter((currentTypeId) => currentTypeId !== typeId)
-        : [...currentTypeIds, typeId],
-    )
+    setSelectedIdsByMode((currentSelections) => {
+      const currentTypeIds = currentSelections[mode] ?? []
+      return {
+        ...currentSelections,
+        [mode]: currentTypeIds.includes(typeId)
+          ? currentTypeIds.filter((currentTypeId) => currentTypeId !== typeId)
+          : [...currentTypeIds, typeId],
+      }
+    })
   }
 
-  function handleSubmit(event) {
-    event.preventDefault()
-    onApply({ selectedTypeIds, opacity })
-    onClose()
+  function changeOpacity(typeId, opacity) {
+    setOpacityByIdByMode((currentOpacityByMode) => ({
+      ...currentOpacityByMode,
+      [mode]: {
+        ...currentOpacityByMode[mode],
+        [typeId]: opacity,
+      },
+    }))
+  }
+
+  function applyChanges() {
+    onApply({ mode, selectedIdsByMode, opacityByIdByMode })
+    return true
   }
 
   return (
-    <EditorModal labelledBy="sphere-layer-title" onClose={onClose}>
-        <form className={styles.modalForm} onSubmit={handleSubmit}>
-          <header className={styles.modalHeader}>
-            <h2 id="sphere-layer-title">세력권 레이어</h2>
-            <div className={styles.modalActions}>
-              <button type="submit">적용</button>
-              <button type="button" aria-label="닫기" onClick={onClose}>
-                ×
-              </button>
-            </div>
-          </header>
+    <EditorModal
+      labelledBy="sphere-layer-title"
+      onApply={applyChanges}
+      onClose={onClose}
+      title="세력권 레이어"
+    >
+      <div className={styles.layerModeSelector} role="group" aria-label="지도 레이어 종류">
+        {LAYER_MODES.map(([layerMode, label]) => (
+          <button
+            type="button"
+            aria-pressed={mode === layerMode}
+            key={layerMode}
+            onClick={() => setMode(layerMode)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
-          <LayerTypeFieldset
-            autonomyTypes={autonomyTypes}
-            onToggle={toggleType}
-            selectedTypeIds={selectedTypeIds}
-          />
-
-          <label className={styles.opacityControl}>
-            <span>종주국 색상 불투명도</span>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-              value={opacity}
-              onChange={(event) => setOpacity(Number(event.target.value))}
-            />
-            <output>{opacity}%</output>
-          </label>
-        </form>
+      <LayerTypeFieldset
+        defaultOpacity={layerConfig.defaultOpacity}
+        filterItem={layerConfig.filterItem}
+        items={layerConfig.items}
+        legend={layerConfig.legend}
+        onOpacityChange={changeOpacity}
+        onToggle={toggleType}
+        opacityByType={opacityByIdByMode[mode] ?? {}}
+        selectedTypeIds={selectedIdsByMode[mode] ?? []}
+        valueKey={layerConfig.valueKey}
+      />
     </EditorModal>
   )
 }

@@ -1,65 +1,108 @@
 import { useState } from 'react'
-import styles from '../admin/AdminMapEditorPage.module.css'
 import { EditorModal } from './EditorModal'
 import { LayerTypeFieldset } from './LayerTypeFieldset'
 
-export function CountryFilterModal({ autonomyTypes, countries, onApply, onClose, settings }) {
+export function CountryFilterModal({
+  autonomyTypes,
+  countries,
+  onApply,
+  onClose,
+  powerBlocs,
+  powerRankTypes,
+  settings,
+}) {
   const [independentCountryId, setIndependentCountryId] = useState(
     settings.independentCountryId,
   )
-  const [selectedTypeIds, setSelectedTypeIds] = useState(settings.selectedTypeIds)
+  const [selectedIds, setSelectedIds] = useState({
+    autonomy: settings.autonomyTypeIds ?? [],
+    powerRank: settings.powerRankTypeIds ?? [],
+    powerBloc: settings.powerBlocIds ?? [],
+  })
   const independentCountries = Object.entries(countries)
     .filter(([, country]) => autonomyTypes[country.autonomyTypeId]?.autonomy === 10)
     .sort(([, left], [, right]) => left.name.localeCompare(right.name, 'ko'))
 
-  function toggleType(typeId) {
-    setSelectedTypeIds((currentTypeIds) =>
-      currentTypeIds.includes(typeId)
-        ? currentTypeIds.filter((currentTypeId) => currentTypeId !== typeId)
-        : [...currentTypeIds, typeId],
-    )
+  const powerBlocItems = Object.fromEntries(
+    Object.entries(powerBlocs).map(([blocId, bloc]) => [
+      blocId,
+      {
+        name: bloc.name,
+        englishName: countries[bloc.leaderCountryId]?.name ?? bloc.leaderCountryId,
+      },
+    ]),
+  )
+
+  function toggleType(category, typeId) {
+    setSelectedIds((currentSelections) => {
+      const currentTypeIds = currentSelections[category]
+      return {
+        ...currentSelections,
+        [category]: currentTypeIds.includes(typeId)
+          ? currentTypeIds.filter((currentTypeId) => currentTypeId !== typeId)
+          : [...currentTypeIds, typeId],
+      }
+    })
   }
 
-  function handleSubmit(event) {
-    event.preventDefault()
-    onApply({ independentCountryId, selectedTypeIds })
-    onClose()
+  function applyFilter() {
+    onApply({
+      independentCountryId,
+      autonomyTypeIds: selectedIds.autonomy,
+      powerRankTypeIds: selectedIds.powerRank,
+      powerBlocIds: selectedIds.powerBloc,
+    })
+    return true
   }
 
   return (
-    <EditorModal labelledBy="country-filter-title" onClose={onClose}>
-      <form className={styles.modalForm} onSubmit={handleSubmit}>
-        <header className={styles.modalHeader}>
-          <h2 id="country-filter-title">국가 목록 필터</h2>
-          <div className={styles.modalActions}>
-            <button type="submit">검색</button>
-            <button type="button" aria-label="닫기" onClick={onClose}>
-              ×
-            </button>
-          </div>
-        </header>
+    <EditorModal
+      applyLabel="검색"
+      closeOnApply
+      labelledBy="country-filter-title"
+      onApply={applyFilter}
+      onClose={onClose}
+      showSaveAlert={false}
+      title="국가 목록 필터"
+    >
+      <label>
+        최상위 독립국
+        <select
+          value={independentCountryId}
+          onChange={(event) => setIndependentCountryId(event.target.value)}
+        >
+          <option value="">모든 독립국</option>
+          {independentCountries.map(([countryId, country]) => (
+            <option key={countryId} value={countryId}>
+              {country.name}
+            </option>
+          ))}
+        </select>
+      </label>
 
-        <label>
-          최상위 독립국
-          <select
-            value={independentCountryId}
-            onChange={(event) => setIndependentCountryId(event.target.value)}
-          >
-            <option value="">모든 독립국</option>
-            {independentCountries.map(([countryId, country]) => (
-              <option key={countryId} value={countryId}>
-                {country.name}
-              </option>
-            ))}
-          </select>
-        </label>
+      <LayerTypeFieldset
+        filterItem={(type) => type.autonomy < 10}
+        items={autonomyTypes}
+        legend="자치도 유형"
+        onToggle={(typeId) => toggleType('autonomy', typeId)}
+        selectedTypeIds={selectedIds.autonomy}
+        valueKey="autonomy"
+      />
 
-        <LayerTypeFieldset
-          autonomyTypes={autonomyTypes}
-          onToggle={toggleType}
-          selectedTypeIds={selectedTypeIds}
-        />
-      </form>
+      <LayerTypeFieldset
+        items={powerRankTypes}
+        legend="국가 등급"
+        onToggle={(typeId) => toggleType('powerRank', typeId)}
+        selectedTypeIds={selectedIds.powerRank}
+        valueKey="level"
+      />
+
+      <LayerTypeFieldset
+        items={powerBlocItems}
+        legend="세력 블록"
+        onToggle={(blocId) => toggleType('powerBloc', blocId)}
+        selectedTypeIds={selectedIds.powerBloc}
+      />
     </EditorModal>
   )
 }

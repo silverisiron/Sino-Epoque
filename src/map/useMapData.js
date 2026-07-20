@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   buildProvincePixelCache,
+  createBorderImageData,
   drawAllOverlay,
   drawBlankMap,
-  drawBorderMap,
   drawSphereLayer,
 } from './canvasRenderers'
 import {
@@ -19,6 +19,7 @@ export function useMapData(borderMode) {
   const overlayCanvasRef = useRef(null)
   const sphereCanvasRef = useRef(null)
   const borderCanvasRef = useRef(null)
+  const borderImageDataCacheRef = useRef(new Map())
   const sourceImageDataRef = useRef(null)
   const overlayImageDataRef = useRef(null)
   const sphereImageDataRef = useRef(null)
@@ -45,7 +46,14 @@ export function useMapData(borderMode) {
     )
   }, [])
 
-  const redrawSphereLayer = useCallback((assignments, countries, autonomyTypes, settings) => {
+  const redrawSphereLayer = useCallback((
+    assignments,
+    countries,
+    autonomyTypes,
+    powerRankTypes,
+    powerBlocs,
+    settings,
+  ) => {
     drawSphereLayer(
       sphereCanvasRef.current,
       sphereImageDataRef.current,
@@ -53,6 +61,8 @@ export function useMapData(borderMode) {
       assignments,
       countries,
       autonomyTypes,
+      powerRankTypes,
+      powerBlocs,
       settings,
     )
   }, [])
@@ -123,6 +133,7 @@ export function useMapData(borderMode) {
         sphereCanvas.height = image.naturalHeight
         borderCanvas.width = image.naturalWidth
         borderCanvas.height = image.naturalHeight
+        borderImageDataCacheRef.current.clear()
 
         baseContext.drawImage(image, 0, 0)
 
@@ -160,6 +171,23 @@ export function useMapData(borderMode) {
         return
       }
 
+      const borderCanvas = borderCanvasRef.current
+      const borderContext = borderCanvas.getContext('2d')
+
+      if (borderMode === 'none') {
+        borderContext.clearRect(0, 0, borderCanvas.width, borderCanvas.height)
+        setIsMapRendering(false)
+        return
+      }
+
+      const cachedBorder = borderImageDataCacheRef.current.get(borderMode)
+
+      if (cachedBorder) {
+        borderContext.putImageData(cachedBorder, 0, 0)
+        setIsMapRendering(false)
+        return
+      }
+
       setIsMapRendering(true)
       await waitForPaint()
 
@@ -167,13 +195,14 @@ export function useMapData(borderMode) {
         return
       }
 
-      drawBorderMap(
-        borderCanvasRef.current,
+      const borderImageData = createBorderImageData(
         sourceImageDataRef.current,
         provinceByRgbRef.current,
         stateByProvinceRef.current,
         borderMode,
       )
+      borderImageDataCacheRef.current.set(borderMode, borderImageData)
+      borderContext.putImageData(borderImageData, 0, 0)
       setIsMapRendering(false)
     }
 

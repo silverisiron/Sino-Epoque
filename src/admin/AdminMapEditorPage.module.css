@@ -251,23 +251,24 @@
   font-size: 12px;
 }
 
-.autonomyManager {
+.dataManager {
   margin-top: 12px;
   border-top: 1px solid #d5dbe3;
   padding-top: 12px;
 }
 
-.autonomyManager summary {
+.dataManager summary {
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
 }
 
-.autonomyManager[open] summary {
+.dataManager[open] > summary {
   margin-bottom: 12px;
 }
 
-.autonomyTypeList {
+.dataTypeList,
+.powerBlocList {
   display: grid;
   gap: 6px;
   max-height: 32vh;
@@ -277,8 +278,8 @@
   list-style: none;
 }
 
-.autonomyTypeRow,
-.customAutonomyTypeRow {
+.dataTypeRow,
+.customDataTypeRow {
   display: grid;
   gap: 6px;
   align-items: center;
@@ -286,16 +287,37 @@
   border: 1px solid #d5dbe3;
 }
 
-.autonomyTypeRow {
+.dataTypeRow {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 28px;
 }
 
-.customAutonomyTypeRow {
+.customDataTypeRow {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 52px auto auto;
 }
 
-.customAutonomyTypeRow input {
+.customDataTypeRow input {
   min-width: 0;
+}
+
+.powerBlocRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid #d5dbe3;
+}
+
+.powerBlocRow > span {
+  display: grid;
+  min-width: 0;
+}
+
+.powerBlocRow small {
+  overflow: hidden;
+  color: #667085;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .modalBackdrop {
@@ -345,11 +367,27 @@
   color: #b42318;
 }
 
+.modalSaveAlert {
+  border: 1px solid #7a9b82;
+  padding: 8px 10px;
+  background: #edf6ef;
+  color: #245c32;
+}
+
 .layerTypeFieldset {
   min-width: 0;
   margin: 0;
   border: 1px solid #d5dbe3;
   padding: 10px;
+}
+
+.layerModeSelector {
+  display: flex;
+  gap: 6px;
+}
+
+.layerModeSelector button {
+  flex: 1;
 }
 
 .layerTypeFieldset legend {
@@ -366,25 +404,41 @@
 }
 
 .layerTypeOption {
-  grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr) 28px;
-  align-items: center;
   border-bottom: 1px solid #e6e9ee;
   padding: 6px 2px;
 }
 
-.layerTypeOption input {
+.layerTypeOptionHeader {
+  grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr) 28px;
+  align-items: center;
+}
+
+.layerTypeOptionHeader input {
   min-height: auto;
 }
 
-.layerTypeOption small {
+.layerTypeOptionHeader small {
   overflow: hidden;
   color: #667085;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.layerTypeOption strong {
+.layerTypeOptionHeader strong {
   text-align: right;
+}
+
+.typeOpacityDetails {
+  margin: 6px 0 0 20px;
+}
+
+.typeOpacityDetails summary {
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.typeOpacityDetails .opacityControl {
+  margin-top: 6px;
 }
 
 .opacityControl {
@@ -403,6 +457,41 @@
 .opacityControl output {
   min-width: 48px;
   text-align: right;
+}
+
+.blocMemberFieldset {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid #d5dbe3;
+  padding: 10px;
+}
+
+.blocMemberFieldset legend {
+  padding: 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.blocMemberList {
+  display: grid;
+  gap: 4px;
+  max-height: 36vh;
+  overflow-y: auto;
+}
+
+.blocMemberList label {
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  border-bottom: 1px solid #e6e9ee;
+  padding: 5px 2px;
+}
+
+.blocMemberList input {
+  min-height: auto;
+}
+
+.blocMemberList small {
+  color: #667085;
 }
 
 .provinceInfo {

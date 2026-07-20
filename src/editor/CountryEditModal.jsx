@@ -26,9 +26,12 @@ export function CountryEditModal({
   countryOrder,
   onApply,
   onClose,
+  powerRankTypes,
 }) {
   const [draft, setDraft] = useState({ ...country })
   const autonomyType = autonomyTypes[draft.autonomyTypeId] ?? autonomyTypes.independent
+  const powerRankType =
+    powerRankTypes[draft.powerRankTypeId] ?? powerRankTypes.decentralized
   const requiresOverlord = autonomyType.autonomy < 10
   const colorIsUsed = Object.entries(countries).some(
     ([otherCountryId, otherCountry]) =>
@@ -55,51 +58,40 @@ export function CountryEditModal({
     }))
   }
 
-  function handleSubmit(event) {
-    event.preventDefault()
+  function applyChanges() {
+    return !isInvalid && onApply({ ...draft, name: draft.name.trim() })
+  }
 
-    if (!isInvalid && onApply({ ...draft, name: draft.name.trim() })) {
-      onClose()
-    }
+  function updateDraft(nextFields) {
+    setDraft((currentDraft) => ({ ...currentDraft, ...nextFields }))
   }
 
   return (
-    <EditorModal labelledBy="country-edit-title" onClose={onClose}>
-        <form className={styles.modalForm} onSubmit={handleSubmit}>
-          <header className={styles.modalHeader}>
-            <h2 id="country-edit-title">국가 편집</h2>
-            <div className={styles.modalActions}>
-              <button type="submit" disabled={isInvalid}>
-                적용
-              </button>
-              <button type="button" aria-label="닫기" onClick={onClose}>
-                ×
-              </button>
-            </div>
-          </header>
+    <EditorModal
+      applyDisabled={isInvalid}
+      labelledBy="country-edit-title"
+      onApply={applyChanges}
+      onClose={onClose}
+      title="국가 편집"
+    >
+      <label>
+        국가 이름
+        <input
+          value={draft.name}
+          onChange={(event) => updateDraft({ name: event.target.value })}
+        />
+      </label>
 
-          <label>
-            국가 이름
-            <input
-              value={draft.name}
-              onChange={(event) =>
-                setDraft((currentDraft) => ({ ...currentDraft, name: event.target.value }))
-              }
-            />
-          </label>
+      <label>
+        국가 색상
+        <input
+          type="color"
+          value={draft.color}
+          onChange={(event) => updateDraft({ color: event.target.value })}
+        />
+      </label>
 
-          <label>
-            국가 색상
-            <input
-              type="color"
-              value={draft.color}
-              onChange={(event) =>
-                setDraft((currentDraft) => ({ ...currentDraft, color: event.target.value }))
-              }
-            />
-          </label>
-
-          <label>
+      <label>
             자치도 유형
             <select
               value={draft.autonomyTypeId}
@@ -113,25 +105,41 @@ export function CountryEditModal({
                   </option>
                 ))}
             </select>
-          </label>
+      </label>
 
-          <label>
-            자치도 수치
-            <output>{autonomyType.autonomy} / 10</output>
-          </label>
+      <label>
+        자치도 수치
+        <output>{autonomyType.autonomy} / 10</output>
+      </label>
 
-          <label>
+      <label>
+        국가 등급
+        <select
+          value={draft.powerRankTypeId}
+          onChange={(event) => updateDraft({ powerRankTypeId: event.target.value })}
+        >
+          {Object.entries(powerRankTypes)
+            .sort(([, left], [, right]) => right.level - left.level)
+            .map(([typeId, type]) => (
+              <option key={typeId} value={typeId}>
+                {type.level} · {type.name} ({type.englishName || typeId})
+              </option>
+            ))}
+        </select>
+      </label>
+
+      <label>
+        국가 등급 수치
+        <output>{powerRankType.level} / 10</output>
+      </label>
+
+      <label>
             종주국
             <select
               disabled={!requiresOverlord}
               required={requiresOverlord}
               value={draft.overlordId ?? ''}
-              onChange={(event) =>
-                setDraft((currentDraft) => ({
-                  ...currentDraft,
-                  overlordId: event.target.value || null,
-                }))
-              }
+              onChange={(event) => updateDraft({ overlordId: event.target.value || null })}
             >
               <option value="">선택</option>
               {availableOverlords.map((overlordId) => (
@@ -140,10 +148,9 @@ export function CountryEditModal({
                 </option>
               ))}
             </select>
-          </label>
+      </label>
 
-          {colorIsUsed ? <p className={styles.validationMessage}>이미 사용 중인 색상입니다.</p> : null}
-        </form>
+      {colorIsUsed ? <p className={styles.validationMessage}>이미 사용 중인 색상입니다.</p> : null}
     </EditorModal>
   )
 }

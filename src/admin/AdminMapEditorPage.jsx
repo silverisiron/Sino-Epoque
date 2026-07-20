@@ -72,10 +72,9 @@ export function AdminMapEditorPage() {
         page={page}
         sphereCanvasRef={mapData.sphereCanvasRef}
         sphereLayerActive={
-          editor.sphereLayerSettings.selectedTypeIds.some(
-            (typeId) => editor.autonomyTypes[typeId]?.autonomy < 10,
-          ) &&
-          editor.sphereLayerSettings.opacity > 0
+          editor.sphereLayerSettings.selectedIdsByMode[
+            editor.sphereLayerSettings.mode
+          ]?.length > 0
         }
         zoom={viewport.zoom}
       />
@@ -90,6 +89,8 @@ export function AdminMapEditorPage() {
             countryOrder={editor.countryOrder}
             onAddAutonomyType={editor.addAutonomyType}
             onAddCountry={editor.addCountry}
+            onAddPowerBloc={editor.addPowerBloc}
+            onAddPowerRankType={editor.addPowerRankType}
             onAutonomyTypeDelete={editor.deleteAutonomyType}
             onAutonomyTypeUpdate={editor.updateAutonomyType}
             onBorderModeChange={setBorderMode}
@@ -97,9 +98,15 @@ export function AdminMapEditorPage() {
             onCountryUpdate={editor.updateCountry}
             onPaintModeChange={editor.setPaintMode}
             onPaintUnitChange={editor.setPaintUnit}
+            onPowerBlocDelete={editor.deletePowerBloc}
+            onPowerBlocUpdate={editor.updatePowerBloc}
+            onPowerRankTypeDelete={editor.deletePowerRankType}
+            onPowerRankTypeUpdate={editor.updatePowerRankType}
             onSelectCountry={editor.setActiveCountryId}
             paintMode={editor.paintMode}
             paintUnit={editor.paintUnit}
+            powerBlocs={editor.powerBlocs}
+            powerRankTypes={editor.powerRankTypes}
             preset={editor.preset}
           />
         ) : (
@@ -123,8 +130,11 @@ export function AdminMapEditorPage() {
       {isSphereLayerModalOpen ? (
         <SphereLayerModal
           autonomyTypes={editor.autonomyTypes}
+          countries={editor.countries}
           onApply={editor.applySphereLayerSettings}
           onClose={() => setIsSphereLayerModalOpen(false)}
+          powerBlocs={editor.powerBlocs}
+          powerRankTypes={editor.powerRankTypes}
           settings={editor.sphereLayerSettings}
         />
       ) : null}

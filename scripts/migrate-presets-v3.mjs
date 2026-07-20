@@ -14,5 +14,5 @@ for (const fileName of fileNames) {
   const preset = JSON.parse(await readFile(filePath, 'utf8'))
   const normalizedPreset = normalizePreset(preset)
   await writeFile(filePath, `${JSON.stringify(normalizedPreset, null, 2)}\n`)
-  console.log(`Migrated ${fileName} to preset version 2.`)
+  console.log(`Migrated ${fileName} to preset version 3.`)
 }

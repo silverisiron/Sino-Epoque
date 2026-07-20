@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "baseMap": "base",
   "autonomyTypes": {
     "independent": {
@@ -63,18 +63,53 @@
       "builtIn": true
     }
   },
+  "powerRankTypes": {
+    "great_power": {
+      "name": "세계 열강",
+      "englishName": "Great Power",
+      "level": 10,
+      "builtIn": true
+    },
+    "major_power": {
+      "name": "강대국",
+      "englishName": "Major Power",
+      "level": 8,
+      "builtIn": true
+    },
+    "regional_power": {
+      "name": "지역강국",
+      "englishName": "Regional Power",
+      "level": 6,
+      "builtIn": true
+    },
+    "minor_power": {
+      "name": "개발도상국",
+      "englishName": "Minor Power",
+      "level": 4,
+      "builtIn": true
+    },
+    "decentralized": {
+      "name": "분권형 국가",
+      "englishName": "Decentralized",
+      "level": 1,
+      "builtIn": true
+    }
+  },
+  "powerBlocs": {},
   "countries": {
     "country_1": {
       "name": "국가 1",
       "color": "#d94645",
       "autonomyTypeId": "independent",
-      "overlordId": null
+      "overlordId": null,
+      "powerRankTypeId": "decentralized"
     },
     "country_2": {
       "name": "국가 2",
       "color": "#423f78",
       "autonomyTypeId": "independent",
-      "overlordId": null
+      "overlordId": null,
+      "powerRankTypeId": "decentralized"
     }
   },
   "countryOrder": [

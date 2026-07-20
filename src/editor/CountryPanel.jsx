@@ -1,40 +1,23 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import styles from '../admin/AdminMapEditorPage.module.css'
 import { downloadJson } from '../map/mapData'
-import { AutonomyTypePanel } from './AutonomyTypePanel'
+import { createCountryBlocIndex, getTopIndependentCountryId } from '../map/worldRelations'
 import { CountryEditModal } from './CountryEditModal'
 import { CountryFilterModal } from './CountryFilterModal'
+import { NumericTypePanel } from './NumericTypePanel'
+import { PowerBlocPanel } from './PowerBlocPanel'
 
 const EMPTY_COUNTRY_FILTER = {
   independentCountryId: '',
-  selectedTypeIds: [],
-}
-
-function getTopIndependentCountryId(countryId, countries, autonomyTypes) {
-  const visited = new Set()
-  let currentCountryId = countryId
-
-  while (currentCountryId && !visited.has(currentCountryId)) {
-    visited.add(currentCountryId)
-    const country = countries[currentCountryId]
-
-    if (!country) {
-      return null
-    }
-
-    if (autonomyTypes[country.autonomyTypeId]?.autonomy === 10) {
-      return currentCountryId
-    }
-
-    currentCountryId = country.overlordId
-  }
-
-  return null
+  autonomyTypeIds: [],
+  powerRankTypeIds: [],
+  powerBlocIds: [],
 }
 
 function CountryRow({
   activeCountryId,
   autonomyType,
+  powerRankType,
   country,
   countryId,
   draggedCountryId,
@@ -67,6 +50,9 @@ function CountryRow({
         <span>
           {autonomyType.name} · {autonomyType.autonomy}
         </span>
+        <span>
+          {powerRankType.name} · {powerRankType.level}
+        </span>
       </div>
       <button type="button" onClick={() => onEdit(countryId)}>
         편집
@@ -83,6 +69,8 @@ export function CountryPanel({
   countryOrder,
   onAddAutonomyType,
   onAddCountry,
+  onAddPowerBloc,
+  onAddPowerRankType,
   onAutonomyTypeDelete,
   onAutonomyTypeUpdate,
   onBorderModeChange,
@@ -93,6 +81,12 @@ export function CountryPanel({
   onSelectCountry,
   paintMode,
   paintUnit,
+  powerBlocs,
+  powerRankTypes,
+  onPowerBlocDelete,
+  onPowerBlocUpdate,
+  onPowerRankTypeDelete,
+  onPowerRankTypeUpdate,
   preset,
 }) {
   const [draggedCountryId, setDraggedCountryId] = useState(null)
@@ -112,11 +106,16 @@ export function CountryPanel({
       ),
     [countries],
   )
+  const blocIdByCountry = useMemo(
+    () => createCountryBlocIndex(powerBlocs, countries, autonomyTypes),
+    [autonomyTypes, countries, powerBlocs],
+  )
 
   const visibleCountryIds = useMemo(() => {
     const normalizedQuery = deferredSearchQuery.trim().normalize('NFKC').toLocaleLowerCase()
-    const selectedTypeIds = new Set(countryFilter.selectedTypeIds)
-    const hasAutonomyFilter = selectedTypeIds.size > 0
+    const autonomyTypeIds = new Set(countryFilter.autonomyTypeIds)
+    const powerRankTypeIds = new Set(countryFilter.powerRankTypeIds)
+    const powerBlocIds = new Set(countryFilter.powerBlocIds)
 
     return countryOrder.filter((countryId) => {
       const country = countries[countryId]
@@ -125,18 +124,25 @@ export function CountryPanel({
         return false
       }
 
-      if (!hasAutonomyFilter || !selectedTypeIds.has(country.autonomyTypeId)) {
-        return !hasAutonomyFilter
+      if (autonomyTypeIds.size > 0 && !autonomyTypeIds.has(country.autonomyTypeId)) {
+        return false
       }
 
-      return (
-        !countryFilter.independentCountryId ||
+      if (powerRankTypeIds.size > 0 && !powerRankTypeIds.has(country.powerRankTypeId)) {
+        return false
+      }
+
+      if (powerBlocIds.size > 0 && !powerBlocIds.has(blocIdByCountry.get(countryId))) {
+        return false
+      }
+
+      return !countryFilter.independentCountryId ||
         getTopIndependentCountryId(countryId, countries, autonomyTypes) ===
           countryFilter.independentCountryId
-      )
     })
   }, [
     autonomyTypes,
+    blocIdByCountry,
     countries,
     countryFilter,
     countryOrder,
@@ -145,13 +151,17 @@ export function CountryPanel({
   ])
 
   function applyCountryFilter(nextFilter) {
-    const selectedTypeIds = nextFilter.selectedTypeIds.filter(
-      (typeId) => autonomyTypes[typeId]?.autonomy < 10,
-    )
-
     setCountryFilter({
-      independentCountryId: selectedTypeIds.length > 0 ? nextFilter.independentCountryId : '',
-      selectedTypeIds,
+      independentCountryId: countries[nextFilter.independentCountryId]
+        ? nextFilter.independentCountryId
+        : '',
+      autonomyTypeIds: nextFilter.autonomyTypeIds.filter(
+        (typeId) => autonomyTypes[typeId]?.autonomy < 10,
+      ),
+      powerRankTypeIds: nextFilter.powerRankTypeIds.filter(
+        (typeId) => powerRankTypes[typeId],
+      ),
+      powerBlocIds: nextFilter.powerBlocIds.filter((blocId) => powerBlocs[blocId]),
     })
   }
 
@@ -264,7 +274,12 @@ export function CountryPanel({
         />
         <button
           type="button"
-          aria-pressed={countryFilter.selectedTypeIds.length > 0}
+          aria-pressed={
+            Boolean(countryFilter.independentCountryId) ||
+            countryFilter.autonomyTypeIds.length > 0 ||
+            countryFilter.powerRankTypeIds.length > 0 ||
+            countryFilter.powerBlocIds.length > 0
+          }
           onClick={() => setIsFilterModalOpen(true)}
         >
           필터
@@ -283,6 +298,7 @@ export function CountryPanel({
             <CountryRow
               activeCountryId={activeCountryId}
               autonomyType={autonomyTypes[country.autonomyTypeId] ?? autonomyTypes.independent}
+              powerRankType={powerRankTypes[country.powerRankTypeId] ?? powerRankTypes.decentralized}
               country={country}
               countryId={countryId}
               draggedCountryId={draggedCountryId}
@@ -300,12 +316,43 @@ export function CountryPanel({
         ) : null}
       </ul>
 
-      <AutonomyTypePanel
-        autonomyTypes={autonomyTypes}
-        countries={countries}
+      <NumericTypePanel
+        heading="Autonomy Types"
+        isInUse={(typeId) =>
+          Object.values(countries).some((country) => country.autonomyTypeId === typeId)
+        }
         onAdd={onAddAutonomyType}
         onDelete={onAutonomyTypeDelete}
         onUpdate={onAutonomyTypeUpdate}
+        summary="자치도 유형 관리"
+        types={autonomyTypes}
+        valueKey="autonomy"
+        valueLabel="자치도 유형"
+      />
+
+      <NumericTypePanel
+        heading="Power Ranks"
+        isInUse={(typeId) =>
+          Object.values(countries).some((country) => country.powerRankTypeId === typeId)
+        }
+        onAdd={onAddPowerRankType}
+        onDelete={onPowerRankTypeDelete}
+        onUpdate={onPowerRankTypeUpdate}
+        summary="국가 등급 관리"
+        types={powerRankTypes}
+        valueKey="level"
+        valueLabel="국가 등급"
+      />
+
+      <PowerBlocPanel
+        autonomyTypes={autonomyTypes}
+        countries={countries}
+        countryOrder={countryOrder}
+        onAdd={onAddPowerBloc}
+        onDelete={onPowerBlocDelete}
+        onUpdate={onPowerBlocUpdate}
+        powerBlocs={powerBlocs}
+        powerRankTypes={powerRankTypes}
       />
 
       <button
@@ -325,6 +372,7 @@ export function CountryPanel({
           countryOrder={countryOrder}
           onApply={(nextCountry) => onCountryUpdate(editingCountryId, nextCountry)}
           onClose={() => setEditingCountryId(null)}
+          powerRankTypes={powerRankTypes}
         />
       ) : null}
 
@@ -334,6 +382,8 @@ export function CountryPanel({
           countries={countries}
           onApply={applyCountryFilter}
           onClose={() => setIsFilterModalOpen(false)}
+          powerBlocs={powerBlocs}
+          powerRankTypes={powerRankTypes}
           settings={countryFilter}
         />
       ) : null}

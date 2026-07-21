@@ -60,6 +60,7 @@ export function PowerBlocEditModal({
   return (
     <EditorModal
       applyDisabled={isInvalid}
+      enableSelectAll
       labelledBy="power-bloc-edit-title"
       onApply={applyChanges}
       onClose={onClose}

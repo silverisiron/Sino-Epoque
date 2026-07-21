@@ -92,6 +92,7 @@ export function SphereLayerModal({
 
   return (
     <EditorModal
+      enableSelectAll
       labelledBy="sphere-layer-title"
       onApply={applyChanges}
       onClose={onClose}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import styles from '../admin/AdminMapEditorPage.module.css'
 import { ModalSaveAlert } from './ModalSaveAlert'
 
@@ -7,6 +7,7 @@ export function EditorModal({
   applyLabel = '적용',
   children,
   closeOnApply = false,
+  enableSelectAll = false,
   labelledBy,
   onApply,
   onClose,
@@ -14,6 +15,7 @@ export function EditorModal({
   title,
 }) {
   const [isSaved, setIsSaved] = useState(false)
+  const formRef = useRef(null)
 
   function handleSubmit(event) {
     event.preventDefault()
@@ -30,6 +32,19 @@ export function EditorModal({
     setIsSaved(true)
   }
 
+  function toggleAllCheckboxes() {
+    const checkboxes = [
+      ...formRef.current.querySelectorAll('input[type="checkbox"]:not(:disabled)'),
+    ]
+    const shouldSelect = checkboxes.some((checkbox) => !checkbox.checked)
+
+    for (const checkbox of checkboxes) {
+      if (checkbox.checked !== shouldSelect) {
+        checkbox.click()
+      }
+    }
+  }
+
   return (
     <div className={styles.modalBackdrop} role="presentation" onMouseDown={onClose}>
       <section
@@ -43,6 +58,7 @@ export function EditorModal({
           className={styles.modalForm}
           onChange={() => setIsSaved(false)}
           onSubmit={handleSubmit}
+          ref={formRef}
         >
           <header className={styles.modalHeader}>
             <h2 id={labelledBy}>{title}</h2>
@@ -57,6 +73,15 @@ export function EditorModal({
           </header>
 
           {showSaveAlert ? <ModalSaveAlert visible={isSaved} /> : null}
+          {enableSelectAll ? (
+            <button
+              className={styles.selectAllButton}
+              type="button"
+              onClick={toggleAllCheckboxes}
+            >
+              모두 선택/해제
+            </button>
+          ) : null}
           {children}
         </form>
       </section>

@@ -369,6 +369,10 @@
   color: #245c32;
 }
 
+.selectAllButton {
+  justify-self: end;
+}
+
 .layerTypeFieldset {
   min-width: 0;
   margin: 0;

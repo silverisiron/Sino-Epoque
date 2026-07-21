@@ -59,6 +59,7 @@ export function CountryFilterModal({
     <EditorModal
       applyLabel="검색"
       closeOnApply
+      enableSelectAll
       labelledBy="country-filter-title"
       onApply={applyFilter}
       onClose={onClose}

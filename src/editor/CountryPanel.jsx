@@ -4,8 +4,7 @@ import { downloadJson } from '../map/mapData'
 import { createCountryBlocIndex, getTopIndependentCountryId } from '../map/worldRelations'
 import { CountryEditModal } from './CountryEditModal'
 import { CountryFilterModal } from './CountryFilterModal'
-import { NumericTypePanel } from './NumericTypePanel'
-import { PowerBlocPanel } from './PowerBlocPanel'
+import { PanelHeader } from './PanelHeader'
 
 const EMPTY_COUNTRY_FILTER = {
   independentCountryId: '',
@@ -64,29 +63,14 @@ function CountryRow({
 export function CountryPanel({
   activeCountryId,
   autonomyTypes,
-  borderMode,
   countries,
   countryOrder,
-  onAddAutonomyType,
   onAddCountry,
-  onAddPowerBloc,
-  onAddPowerRankType,
-  onAutonomyTypeDelete,
-  onAutonomyTypeUpdate,
-  onBorderModeChange,
   onCountryOrderChange,
   onCountryUpdate,
-  onPaintModeChange,
-  onPaintUnitChange,
   onSelectCountry,
-  paintMode,
-  paintUnit,
   powerBlocs,
   powerRankTypes,
-  onPowerBlocDelete,
-  onPowerBlocUpdate,
-  onPowerRankTypeDelete,
-  onPowerRankTypeUpdate,
   preset,
 }) {
   const [draggedCountryId, setDraggedCountryId] = useState(null)
@@ -199,70 +183,7 @@ export function CountryPanel({
 
   return (
     <section aria-labelledby="countries-title">
-      <div className={styles.sideHeader}>
-        <h2 id="countries-title">Countries</h2>
-        <button type="button" onClick={onAddCountry}>
-          추가
-        </button>
-      </div>
-
-      <div className={styles.paintModes} role="group" aria-label="페인트 모드">
-        <button
-          type="button"
-          aria-pressed={paintMode === 'single'}
-          onClick={() => onPaintModeChange('single')}
-        >
-          단일 채우기
-        </button>
-        <button
-          type="button"
-          aria-pressed={paintMode === 'multi'}
-          onClick={() => onPaintModeChange('multi')}
-        >
-          다중 채우기
-        </button>
-      </div>
-
-      <div className={styles.paintModes} role="group" aria-label="색칠 단위">
-        <button
-          type="button"
-          aria-pressed={paintUnit === 'province'}
-          onClick={() => onPaintUnitChange('province')}
-        >
-          Province 별 색칠
-        </button>
-        <button
-          type="button"
-          aria-pressed={paintUnit === 'state'}
-          onClick={() => onPaintUnitChange('state')}
-        >
-          State 별 색칠
-        </button>
-      </div>
-
-      <div className={styles.paintModes} role="group" aria-label="경계선 표시">
-        <button
-          type="button"
-          aria-pressed={borderMode === 'province'}
-          onClick={() => onBorderModeChange('province')}
-        >
-          Province 국경
-        </button>
-        <button
-          type="button"
-          aria-pressed={borderMode === 'state'}
-          onClick={() => onBorderModeChange('state')}
-        >
-          State 국경
-        </button>
-        <button
-          type="button"
-          aria-pressed={borderMode === 'none'}
-          onClick={() => onBorderModeChange('none')}
-        >
-          국경 표시 없음
-        </button>
-      </div>
+      <PanelHeader headingId="countries-title" onAction={onAddCountry} title="Countries" />
 
       <div className={styles.countrySearch}>
         <input
@@ -315,47 +236,6 @@ export function CountryPanel({
           <li className={styles.emptyCountryList}>검색 결과가 없습니다.</li>
         ) : null}
       </ul>
-
-      <NumericTypePanel
-        heading="Autonomy Types"
-        isInUse={(typeId) =>
-          Object.keys(autonomyTypes).length <= 1 ||
-          Object.values(countries).some((country) => country.autonomyTypeId === typeId)
-        }
-        onAdd={onAddAutonomyType}
-        onDelete={onAutonomyTypeDelete}
-        onUpdate={onAutonomyTypeUpdate}
-        summary="자치도 유형 관리"
-        types={autonomyTypes}
-        valueKey="autonomy"
-        valueLabel="자치도 유형"
-      />
-
-      <NumericTypePanel
-        heading="Power Ranks"
-        isInUse={(typeId) =>
-          Object.keys(powerRankTypes).length <= 1 ||
-          Object.values(countries).some((country) => country.powerRankTypeId === typeId)
-        }
-        onAdd={onAddPowerRankType}
-        onDelete={onPowerRankTypeDelete}
-        onUpdate={onPowerRankTypeUpdate}
-        summary="국가 등급 관리"
-        types={powerRankTypes}
-        valueKey="level"
-        valueLabel="국가 등급"
-      />
-
-      <PowerBlocPanel
-        autonomyTypes={autonomyTypes}
-        countries={countries}
-        countryOrder={countryOrder}
-        onAdd={onAddPowerBloc}
-        onDelete={onPowerBlocDelete}
-        onUpdate={onPowerBlocUpdate}
-        powerBlocs={powerBlocs}
-        powerRankTypes={powerRankTypes}
-      />
 
       <button
         type="button"

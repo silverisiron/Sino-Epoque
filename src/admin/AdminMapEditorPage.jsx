@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CountryPanel } from '../editor/CountryPanel'
+import { DataManagerPanel } from '../editor/DataManagerPanel'
 import { MapCanvas } from '../editor/MapCanvas'
 import { PresetLoader } from '../editor/PresetLoader'
 import { ProvinceInfo } from '../editor/ProvinceInfo'
@@ -53,58 +54,67 @@ export function AdminMapEditorPage() {
         </nav>
       </header>
 
+      <section className={styles.sidePanel} aria-label="데이터 도구">
+        {page === 'editor' ? (
+          <DataManagerPanel
+            autonomyTypes={editor.autonomyTypes}
+            countries={editor.countries}
+            countryOrder={editor.countryOrder}
+            onAddAutonomyType={editor.addAutonomyType}
+            onAddPowerBloc={editor.addPowerBloc}
+            onAddPowerRankType={editor.addPowerRankType}
+            onAutonomyTypeDelete={editor.deleteAutonomyType}
+            onAutonomyTypeUpdate={editor.updateAutonomyType}
+            onPowerBlocDelete={editor.deletePowerBloc}
+            onPowerBlocUpdate={editor.updatePowerBloc}
+            onPowerRankTypeDelete={editor.deletePowerRankType}
+            onPowerRankTypeUpdate={editor.updatePowerRankType}
+            powerBlocs={editor.powerBlocs}
+            powerRankTypes={editor.powerRankTypes}
+          />
+        ) : null}
+      </section>
+
       <MapCanvas
         activeTool={editor.activeTool}
         baseCanvasRef={mapData.baseCanvasRef}
         borderCanvasRef={mapData.borderCanvasRef}
+        borderMode={borderMode}
         canvasStyle={viewport.canvasStyle}
         isMapRendering={mapData.isMapRendering}
         mapScrollRef={viewport.mapScrollRef}
-        mapSize={mapData.mapSize}
         onActiveToolChange={editor.setActiveTool}
+        onBorderModeChange={setBorderMode}
         onOpenSphereLayer={() => setIsSphereLayerModalOpen(true)}
+        onPaintModeChange={editor.setPaintMode}
+        onPaintUnitChange={editor.setPaintUnit}
         onPointerDown={editor.handlePointerDown}
         onPointerMove={editor.handlePointerMove}
         onPointerUp={editor.handlePointerUp}
         onZoomIn={() => viewport.updateZoom(viewport.zoomRef.current * 1.15)}
         onZoomOut={() => viewport.updateZoom(viewport.zoomRef.current / 1.15)}
         overlayCanvasRef={mapData.overlayCanvasRef}
-        page={page}
+        paintMode={editor.paintMode}
+        paintUnit={editor.paintUnit}
         sphereCanvasRef={mapData.sphereCanvasRef}
         sphereLayerActive={
           editor.sphereLayerSettings.selectedIdsByMode[
             editor.sphereLayerSettings.mode
           ]?.length > 0
         }
-        zoom={viewport.zoom}
       />
 
-      <aside className={styles.sidePanel} aria-label="맵 도구">
+      <section className={styles.sidePanel} aria-label="국가 및 맵 정보">
         {page === 'editor' ? (
           <CountryPanel
             activeCountryId={editor.activeCountryId}
             autonomyTypes={editor.autonomyTypes}
-            borderMode={borderMode}
             countries={editor.countries}
             countryOrder={editor.countryOrder}
-            onAddAutonomyType={editor.addAutonomyType}
             onAddCountry={editor.addCountry}
-            onAddPowerBloc={editor.addPowerBloc}
-            onAddPowerRankType={editor.addPowerRankType}
-            onAutonomyTypeDelete={editor.deleteAutonomyType}
-            onAutonomyTypeUpdate={editor.updateAutonomyType}
-            onBorderModeChange={setBorderMode}
             onCountryOrderChange={editor.reorderCountries}
             onCountryUpdate={editor.updateCountry}
-            onPaintModeChange={editor.setPaintMode}
-            onPaintUnitChange={editor.setPaintUnit}
-            onPowerBlocDelete={editor.deletePowerBloc}
-            onPowerBlocUpdate={editor.updatePowerBloc}
-            onPowerRankTypeDelete={editor.deletePowerRankType}
-            onPowerRankTypeUpdate={editor.updatePowerRankType}
             onSelectCountry={editor.setActiveCountryId}
-            paintMode={editor.paintMode}
-            paintUnit={editor.paintUnit}
             powerBlocs={editor.powerBlocs}
             powerRankTypes={editor.powerRankTypes}
             preset={editor.preset}
@@ -125,7 +135,7 @@ export function AdminMapEditorPage() {
           selectedProvince={editor.selectedProvince}
           selectedState={editor.selectedState}
         />
-      </aside>
+      </section>
 
       {isSphereLayerModalOpen ? (
         <SphereLayerModal

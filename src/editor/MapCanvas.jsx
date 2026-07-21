@@ -1,78 +1,32 @@
 import styles from '../admin/AdminMapEditorPage.module.css'
+import { MapToolbar } from './MapToolbar'
 
 export function MapCanvas({
   activeTool,
   baseCanvasRef,
   borderCanvasRef,
+  borderMode,
   canvasStyle,
   isMapRendering,
   mapScrollRef,
-  mapSize,
   onActiveToolChange,
+  onBorderModeChange,
   onOpenSphereLayer,
+  onPaintModeChange,
+  onPaintUnitChange,
   onPointerDown,
   onPointerMove,
   onPointerUp,
   onZoomIn,
   onZoomOut,
   overlayCanvasRef,
-  page,
+  paintMode,
+  paintUnit,
   sphereCanvasRef,
   sphereLayerActive,
-  zoom,
 }) {
   return (
-    <section className={styles.mapPanel} aria-labelledby="map-title">
-      <div className={styles.panelHeader}>
-        <div>
-          <h2 id="map-title">{page === 'editor' ? 'Map Editor' : 'Preset Loader'}</h2>
-          <p>
-            {mapSize ? `${mapSize.width} x ${mapSize.height}` : '-'} / zoom{' '}
-            {Math.round(zoom * 100)}%
-          </p>
-        </div>
-        <div className={styles.mapTools} role="toolbar" aria-label="지도 도구">
-          <button
-            type="button"
-            aria-pressed={sphereLayerActive}
-            onClick={onOpenSphereLayer}
-          >
-            레이어
-          </button>
-          <div className={styles.toolGroup} role="group" aria-label="도구">
-            <button
-              type="button"
-              aria-pressed={activeTool === 'paint'}
-              onClick={() => onActiveToolChange('paint')}
-            >
-              그리기
-            </button>
-            <button
-              type="button"
-              aria-pressed={activeTool === 'erase'}
-              onClick={() => onActiveToolChange('erase')}
-            >
-              지우개
-            </button>
-            <button
-              type="button"
-              aria-pressed={activeTool === 'hand'}
-              onClick={() => onActiveToolChange('hand')}
-            >
-              화면 이동
-            </button>
-          </div>
-          <div className={styles.zoomButtons} role="group" aria-label="확대 축소">
-            <button type="button" onClick={onZoomIn}>
-              +
-            </button>
-            <button type="button" onClick={onZoomOut}>
-              -
-            </button>
-          </div>
-        </div>
-      </div>
-
+    <section className={styles.mapPanel} aria-label="지도 캔버스">
       <div className={styles.mapScroll} ref={mapScrollRef}>
         <div className={styles.mapStage}>
           <div className={styles.canvasStack} style={canvasStyle}>
@@ -100,6 +54,21 @@ export function MapCanvas({
           </div>
         ) : null}
       </div>
+
+      <MapToolbar
+        activeTool={activeTool}
+        borderMode={borderMode}
+        onActiveToolChange={onActiveToolChange}
+        onBorderModeChange={onBorderModeChange}
+        onOpenSphereLayer={onOpenSphereLayer}
+        onPaintModeChange={onPaintModeChange}
+        onPaintUnitChange={onPaintUnitChange}
+        onZoomIn={onZoomIn}
+        onZoomOut={onZoomOut}
+        paintMode={paintMode}
+        paintUnit={paintUnit}
+        sphereLayerActive={sphereLayerActive}
+      />
     </section>
   )
 }

@@ -319,6 +319,7 @@ export function CountryPanel({
       <NumericTypePanel
         heading="Autonomy Types"
         isInUse={(typeId) =>
+          Object.keys(autonomyTypes).length <= 1 ||
           Object.values(countries).some((country) => country.autonomyTypeId === typeId)
         }
         onAdd={onAddAutonomyType}
@@ -333,6 +334,7 @@ export function CountryPanel({
       <NumericTypePanel
         heading="Power Ranks"
         isInUse={(typeId) =>
+          Object.keys(powerRankTypes).length <= 1 ||
           Object.values(countries).some((country) => country.powerRankTypeId === typeId)
         }
         onAdd={onAddPowerRankType}

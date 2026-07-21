@@ -95,7 +95,7 @@ export function SphereLayerModal({
       labelledBy="sphere-layer-title"
       onApply={applyChanges}
       onClose={onClose}
-      title="세력권 레이어"
+      title="레이어 설정"
     >
       <div className={styles.layerModeSelector} role="group" aria-label="지도 레이어 종류">
         {LAYER_MODES.map(([layerMode, label]) => (

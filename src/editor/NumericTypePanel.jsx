@@ -8,7 +8,6 @@ function NumericTypeRow({ inUse, onDelete, onUpdate, type, typeId, valueKey, val
     name: draft.name.trim() || typeId,
     englishName: draft.englishName.trim(),
     [valueKey]: Math.min(10, Math.max(1, Number.parseInt(draft[valueKey], 10) || 1)),
-    builtIn: false,
   }
   const hasChanges =
     normalizedDraft.name !== type.name ||
@@ -19,16 +18,6 @@ function NumericTypeRow({ inUse, onDelete, onUpdate, type, typeId, valueKey, val
     if (onUpdate(typeId, normalizedDraft)) {
       setDraft(normalizedDraft)
     }
-  }
-
-  if (type.builtIn) {
-    return (
-      <li className={styles.dataTypeRow}>
-        <span>{type.name}</span>
-        <span>{type.englishName}</span>
-        <strong>{type[valueKey]}</strong>
-      </li>
-    )
   }
 
   return (

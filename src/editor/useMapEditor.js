@@ -43,9 +43,26 @@ function createCustomNumericType(types, name, valueKey, value) {
       name: `${name} ${typeNumber}`,
       englishName: '',
       [valueKey]: value,
-      builtIn: false,
     },
   ]
+}
+
+function getAvailableTypeId(types, preferredId, valueKey, preferHighest) {
+  if (types[preferredId]) {
+    return preferredId
+  }
+
+  return Object.entries(types).reduce((fallbackId, [typeId, type]) => {
+    if (!fallbackId) {
+      return typeId
+    }
+
+    const fallbackValue = types[fallbackId][valueKey]
+    const isBetter = preferHighest
+      ? type[valueKey] > fallbackValue
+      : type[valueKey] < fallbackValue
+    return isBetter ? typeId : fallbackId
+  }, '')
 }
 
 function createsOverlordCycle(countryId, overlordId, countries) {
@@ -342,8 +359,18 @@ export function useMapEditor({
       [countryId]: {
         name: `국가 ${countryNumber}`,
         color,
-        autonomyTypeId: DEFAULT_AUTONOMY_TYPE_ID,
-        powerRankTypeId: DEFAULT_POWER_RANK_TYPE_ID,
+        autonomyTypeId: getAvailableTypeId(
+          autonomyTypes,
+          DEFAULT_AUTONOMY_TYPE_ID,
+          'autonomy',
+          true,
+        ),
+        powerRankTypeId: getAvailableTypeId(
+          powerRankTypes,
+          DEFAULT_POWER_RANK_TYPE_ID,
+          'level',
+          false,
+        ),
         overlordId: null,
       },
     }))
@@ -474,7 +501,7 @@ export function useMapEditor({
   }
 
   function updateAutonomyType(typeId, nextType) {
-    if (autonomyTypes[typeId]?.builtIn) {
+    if (!autonomyTypes[typeId]) {
       return false
     }
 
@@ -504,7 +531,6 @@ export function useMapEditor({
         name: nextType.name.trim() || typeId,
         englishName: nextType.englishName.trim(),
         autonomy,
-        builtIn: false,
       },
     }))
 
@@ -526,10 +552,10 @@ export function useMapEditor({
 
   function deleteAutonomyType(typeId) {
     if (
-      autonomyTypes[typeId]?.builtIn ||
+      Object.keys(autonomyTypes).length <= 1 ||
       Object.values(countries).some((country) => country.autonomyTypeId === typeId)
     ) {
-      setStatus('기본 유형 또는 사용 중인 자치도 유형은 삭제할 수 없습니다.')
+      setStatus('사용 중이거나 마지막 남은 자치도 유형은 삭제할 수 없습니다.')
       return false
     }
 
@@ -553,7 +579,7 @@ export function useMapEditor({
   }
 
   function updatePowerRankType(typeId, nextType) {
-    if (powerRankTypes[typeId]?.builtIn) {
+    if (!powerRankTypes[typeId]) {
       return false
     }
 
@@ -578,7 +604,6 @@ export function useMapEditor({
         name: nextType.name.trim() || typeId,
         englishName: nextType.englishName.trim(),
         level,
-        builtIn: false,
       },
     }))
     setStatus('국가 등급이 적용되었습니다.')
@@ -587,10 +612,10 @@ export function useMapEditor({
 
   function deletePowerRankType(typeId) {
     if (
-      powerRankTypes[typeId]?.builtIn ||
+      Object.keys(powerRankTypes).length <= 1 ||
       Object.values(countries).some((country) => country.powerRankTypeId === typeId)
     ) {
-      setStatus('기본 유형 또는 사용 중인 국가 등급은 삭제할 수 없습니다.')
+      setStatus('사용 중이거나 마지막 남은 국가 등급은 삭제할 수 없습니다.')
       return false
     }
 

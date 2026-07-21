@@ -278,17 +278,12 @@
   list-style: none;
 }
 
-.dataTypeRow,
 .customDataTypeRow {
   display: grid;
   gap: 6px;
   align-items: center;
   padding: 6px;
   border: 1px solid #d5dbe3;
-}
-
-.dataTypeRow {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 28px;
 }
 
 .customDataTypeRow {

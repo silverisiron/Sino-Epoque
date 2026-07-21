@@ -5,94 +5,79 @@
     "independent": {
       "name": "독립국",
       "englishName": "Independent",
-      "autonomy": 10,
-      "builtIn": true
+      "autonomy": 10
     },
     "personal_union": {
       "name": "동군연합",
       "englishName": "Personal Union",
-      "autonomy": 9,
-      "builtIn": true
+      "autonomy": 9
     },
     "dominion": {
       "name": "자치령",
       "englishName": "Dominion",
-      "autonomy": 8,
-      "builtIn": true
+      "autonomy": 8
     },
     "protectorate": {
       "name": "피보호국",
       "englishName": "Protectorate",
-      "autonomy": 7,
-      "builtIn": true
+      "autonomy": 7
     },
     "chartered_company": {
       "name": "특허 회사",
       "englishName": "Chartered Company",
-      "autonomy": 6,
-      "builtIn": true
+      "autonomy": 6
     },
     "puppet": {
       "name": "괴뢰국",
       "englishName": "Puppet",
-      "autonomy": 5,
-      "builtIn": true
+      "autonomy": 5
     },
     "colony": {
       "name": "식민지",
       "englishName": "Colony",
-      "autonomy": 4,
-      "builtIn": true
+      "autonomy": 4
     },
     "crown_colony": {
       "name": "직할 식민지",
       "englishName": "Crown Colony",
-      "autonomy": 3,
-      "builtIn": true
+      "autonomy": 3
     },
     "occupied": {
       "name": "점령지",
       "englishName": "Occupied",
-      "autonomy": 2,
-      "builtIn": true
+      "autonomy": 2
     },
     "integrated": {
       "name": "본토화",
       "englishName": "Integrated",
-      "autonomy": 1,
-      "builtIn": true
+      "autonomy": 1
     }
   },
   "powerRankTypes": {
     "great_power": {
       "name": "세계 열강",
       "englishName": "Great Power",
-      "level": 10,
-      "builtIn": true
+      "level": 10
     },
     "major_power": {
       "name": "강대국",
       "englishName": "Major Power",
-      "level": 8,
-      "builtIn": true
+      "level": 8
     },
     "regional_power": {
       "name": "지역강국",
       "englishName": "Regional Power",
-      "level": 6,
-      "builtIn": true
+      "level": 6
     },
     "minor_power": {
       "name": "개발도상국",
       "englishName": "Minor Power",
-      "level": 4,
-      "builtIn": true
+      "level": 4
     },
     "decentralized": {
       "name": "분권형 국가",
       "englishName": "Decentralized",
-      "level": 1,
-      "builtIn": true
+      "level": 1
     }
   },
   "powerBlocs": {},

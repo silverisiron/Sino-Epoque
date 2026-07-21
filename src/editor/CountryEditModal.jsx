@@ -44,10 +44,12 @@ export function CountryEditModal({
       countries[otherCountryId] &&
       !createsOverlordCycle(countryId, otherCountryId, countries),
   )
+  const overlordIsInvalid =
+    requiresOverlord && !availableOverlords.includes(draft.overlordId)
   const isInvalid =
     !draft.name.trim() ||
     colorIsUsed ||
-    (requiresOverlord && !availableOverlords.includes(draft.overlordId))
+    overlordIsInvalid
 
   function handleAutonomyTypeChange(autonomyTypeId) {
     const nextType = autonomyTypes[autonomyTypeId]
@@ -92,19 +94,19 @@ export function CountryEditModal({
       </label>
 
       <label>
-            자치도 유형
-            <select
-              value={draft.autonomyTypeId}
-              onChange={(event) => handleAutonomyTypeChange(event.target.value)}
-            >
-              {Object.entries(autonomyTypes)
-                .sort(([, left], [, right]) => right.autonomy - left.autonomy)
-                .map(([typeId, type]) => (
-                  <option key={typeId} value={typeId}>
-                    {type.autonomy} · {type.name} ({type.englishName || typeId})
-                  </option>
-                ))}
-            </select>
+        자치도 유형
+        <select
+          value={draft.autonomyTypeId}
+          onChange={(event) => handleAutonomyTypeChange(event.target.value)}
+        >
+          {Object.entries(autonomyTypes)
+            .sort(([, left], [, right]) => right.autonomy - left.autonomy)
+            .map(([typeId, type]) => (
+              <option key={typeId} value={typeId}>
+                {type.autonomy} · {type.name} ({type.englishName || typeId})
+              </option>
+            ))}
+        </select>
       </label>
 
       <label>
@@ -134,21 +136,28 @@ export function CountryEditModal({
       </label>
 
       <label>
-            종주국
-            <select
-              disabled={!requiresOverlord}
-              required={requiresOverlord}
-              value={draft.overlordId ?? ''}
-              onChange={(event) => updateDraft({ overlordId: event.target.value || null })}
-            >
-              <option value="">선택</option>
-              {availableOverlords.map((overlordId) => (
-                <option key={overlordId} value={overlordId}>
-                  {countries[overlordId].name}
-                </option>
-              ))}
-            </select>
+        종주국
+        <select
+          aria-describedby={overlordIsInvalid ? 'overlord-validation-message' : undefined}
+          disabled={!requiresOverlord}
+          required={requiresOverlord}
+          value={draft.overlordId ?? ''}
+          onChange={(event) => updateDraft({ overlordId: event.target.value || null })}
+        >
+          <option value="">선택</option>
+          {availableOverlords.map((overlordId) => (
+            <option key={overlordId} value={overlordId}>
+              {countries[overlordId].name}
+            </option>
+          ))}
+        </select>
       </label>
+
+      {overlordIsInvalid ? (
+        <p className={styles.validationMessage} id="overlord-validation-message">
+          자치도 10 미만 유형은 종주국을 선택해야 적용할 수 있습니다.
+        </p>
+      ) : null}
 
       {colorIsUsed ? <p className={styles.validationMessage}>이미 사용 중인 색상입니다.</p> : null}
     </EditorModal>

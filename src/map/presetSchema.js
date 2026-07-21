@@ -6,61 +6,51 @@ export const DEFAULT_AUTONOMY_TYPES = Object.freeze({
     name: '독립국',
     englishName: 'Independent',
     autonomy: 10,
-    builtIn: true,
   },
   personal_union: {
     name: '동군연합',
     englishName: 'Personal Union',
     autonomy: 9,
-    builtIn: true,
   },
   dominion: {
     name: '자치령',
     englishName: 'Dominion',
     autonomy: 8,
-    builtIn: true,
   },
   protectorate: {
     name: '피보호국',
     englishName: 'Protectorate',
     autonomy: 7,
-    builtIn: true,
   },
   chartered_company: {
     name: '특허 회사',
     englishName: 'Chartered Company',
     autonomy: 6,
-    builtIn: true,
   },
   puppet: {
     name: '괴뢰국',
     englishName: 'Puppet',
     autonomy: 5,
-    builtIn: true,
   },
   colony: {
     name: '식민지',
     englishName: 'Colony',
     autonomy: 4,
-    builtIn: true,
   },
   crown_colony: {
     name: '직할 식민지',
     englishName: 'Crown Colony',
     autonomy: 3,
-    builtIn: true,
   },
   occupied: {
     name: '점령지',
     englishName: 'Occupied',
     autonomy: 2,
-    builtIn: true,
   },
   integrated: {
     name: '본토화',
     englishName: 'Integrated',
     autonomy: 1,
-    builtIn: true,
   },
 })
 
@@ -69,31 +59,26 @@ export const DEFAULT_POWER_RANK_TYPES = Object.freeze({
     name: '세계 열강',
     englishName: 'Great Power',
     level: 10,
-    builtIn: true,
   },
   major_power: {
     name: '강대국',
     englishName: 'Major Power',
     level: 8,
-    builtIn: true,
   },
   regional_power: {
     name: '지역강국',
     englishName: 'Regional Power',
     level: 6,
-    builtIn: true,
   },
   minor_power: {
     name: '개발도상국',
     englishName: 'Minor Power',
     level: 4,
-    builtIn: true,
   },
   decentralized: {
     name: '분권형 국가',
     englishName: 'Decentralized',
     level: 1,
-    builtIn: true,
   },
 })
 
@@ -114,8 +99,8 @@ function normalizeScaleValue(value, fallback) {
   return Math.min(10, Math.max(1, Number.isNaN(number) ? fallback : number))
 }
 
-function normalizeAutonomyTypes(rawTypes = {}) {
-  const autonomyTypes = createDefaultAutonomyTypes()
+function normalizeAutonomyTypes(rawTypes = {}, includeDefaults = false) {
+  const autonomyTypes = includeDefaults ? createDefaultAutonomyTypes() : {}
 
   for (const [id, type] of Object.entries(rawTypes)) {
     if (!id || !type) {
@@ -126,15 +111,14 @@ function normalizeAutonomyTypes(rawTypes = {}) {
       name: type.name?.trim() || id,
       englishName: type.englishName?.trim() || '',
       autonomy: normalizeScaleValue(type.autonomy, 10),
-      builtIn: Boolean(DEFAULT_AUTONOMY_TYPES[id] || type.builtIn),
     }
   }
 
-  return autonomyTypes
+  return Object.keys(autonomyTypes).length > 0 ? autonomyTypes : createDefaultAutonomyTypes()
 }
 
-function normalizePowerRankTypes(rawTypes = {}) {
-  const powerRankTypes = createDefaultPowerRankTypes()
+function normalizePowerRankTypes(rawTypes = {}, includeDefaults = false) {
+  const powerRankTypes = includeDefaults ? createDefaultPowerRankTypes() : {}
 
   for (const [id, type] of Object.entries(rawTypes)) {
     if (!id || !type) {
@@ -145,11 +129,30 @@ function normalizePowerRankTypes(rawTypes = {}) {
       name: type.name?.trim() || id,
       englishName: type.englishName?.trim() || '',
       level: normalizeScaleValue(type.level, 1),
-      builtIn: Boolean(DEFAULT_POWER_RANK_TYPES[id] || type.builtIn),
     }
   }
 
-  return powerRankTypes
+  return Object.keys(powerRankTypes).length > 0
+    ? powerRankTypes
+    : createDefaultPowerRankTypes()
+}
+
+function getFallbackTypeId(types, preferredId, valueKey, preferHighest) {
+  if (types[preferredId]) {
+    return preferredId
+  }
+
+  return Object.entries(types).reduce((fallbackId, [typeId, type]) => {
+    if (!fallbackId) {
+      return typeId
+    }
+
+    const fallbackValue = types[fallbackId][valueKey]
+    const isBetter = preferHighest
+      ? type[valueKey] > fallbackValue
+      : type[valueKey] < fallbackValue
+    return isBetter ? typeId : fallbackId
+  }, '')
 }
 
 function normalizeVersionOnePreset(preset) {
@@ -193,22 +196,37 @@ function normalizeVersionOnePreset(preset) {
 }
 
 export function normalizePreset(preset = {}) {
+  const sourceVersion = preset.version
+
   if (preset.version !== 2 && preset.version !== 3) {
     preset = normalizeVersionOnePreset(preset)
   }
 
-  const autonomyTypes = normalizeAutonomyTypes(preset.autonomyTypes)
-  const powerRankTypes = normalizePowerRankTypes(preset.powerRankTypes)
+  const includeDefaults = sourceVersion !== 3
+  const autonomyTypes = normalizeAutonomyTypes(preset.autonomyTypes, includeDefaults)
+  const powerRankTypes = normalizePowerRankTypes(preset.powerRankTypes, includeDefaults)
+  const fallbackAutonomyTypeId = getFallbackTypeId(
+    autonomyTypes,
+    DEFAULT_AUTONOMY_TYPE_ID,
+    'autonomy',
+    true,
+  )
+  const fallbackPowerRankTypeId = getFallbackTypeId(
+    powerRankTypes,
+    DEFAULT_POWER_RANK_TYPE_ID,
+    'level',
+    false,
+  )
   const countries = {}
 
   for (const [countryId, country] of Object.entries(preset.countries ?? {})) {
     const autonomyTypeId = autonomyTypes[country.autonomyTypeId]
       ? country.autonomyTypeId
-      : DEFAULT_AUTONOMY_TYPE_ID
+      : fallbackAutonomyTypeId
     const autonomyType = autonomyTypes[autonomyTypeId]
     const powerRankTypeId = powerRankTypes[country.powerRankTypeId]
       ? country.powerRankTypeId
-      : DEFAULT_POWER_RANK_TYPE_ID
+      : fallbackPowerRankTypeId
 
     countries[countryId] = {
       ...country,

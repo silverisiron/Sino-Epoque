@@ -6,6 +6,8 @@ export function MapCanvas({
   baseCanvasRef,
   borderCanvasRef,
   borderMode,
+  canRedo,
+  canUndo,
   canvasStyle,
   isMapRendering,
   mapScrollRef,
@@ -17,6 +19,8 @@ export function MapCanvas({
   onPointerDown,
   onPointerMove,
   onPointerUp,
+  onRedo,
+  onUndo,
   onZoomIn,
   onZoomOut,
   overlayCanvasRef,
@@ -53,6 +57,27 @@ export function MapCanvas({
             </div>
           </div>
         ) : null}
+      </div>
+
+      <div className={styles.mapHistoryTools} role="toolbar" aria-label="편집 기록">
+        <button
+          type="button"
+          aria-label="실행 취소"
+          disabled={!canUndo}
+          onClick={onUndo}
+          title="실행 취소 (Ctrl/Cmd+Z)"
+        >
+          ↶
+        </button>
+        <button
+          type="button"
+          aria-label="다시 실행"
+          disabled={!canRedo}
+          onClick={onRedo}
+          title="다시 실행 (Ctrl/Cmd+Y)"
+        >
+          ↷
+        </button>
       </div>
 
       <MapToolbar

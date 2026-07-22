@@ -28,6 +28,8 @@ const DEFAULT_SPHERE_LAYER_SETTINGS = {
   },
 }
 
+const HISTORY_LIMIT = 30
+
 function createCustomNumericType(types, name, valueKey, value) {
   let typeNumber = 1
   let typeId = `custom_${typeNumber}`
@@ -102,6 +104,10 @@ export function useMapEditor({
   statesByIdRef,
 }) {
   const assignmentsRef = useRef({})
+  const historyStateRef = useRef(null)
+  const historyTransactionRef = useRef(false)
+  const pastHistoryRef = useRef([])
+  const futureHistoryRef = useRef([])
   const isPaintingRef = useRef(false)
   const lastPaintedProvinceRef = useRef(null)
   const panRef = useRef(null)
@@ -130,6 +136,10 @@ export function useMapEditor({
   const [sphereLayerSettings, setSphereLayerSettings] = useState(
     DEFAULT_SPHERE_LAYER_SETTINGS,
   )
+  const [historyAvailability, setHistoryAvailability] = useState({
+    canUndo: false,
+    canRedo: false,
+  })
 
   const activeCountry = countries[activeCountryId]
   const preset = useMemo(
@@ -149,6 +159,26 @@ export function useMapEditor({
   useEffect(() => {
     assignmentsRef.current = assignments
   }, [assignments])
+
+  useEffect(() => {
+    historyStateRef.current = {
+      activeCountryId,
+      assignments,
+      autonomyTypes,
+      countries,
+      countryOrder,
+      powerBlocs,
+      powerRankTypes,
+    }
+  }, [
+    activeCountryId,
+    assignments,
+    autonomyTypes,
+    countries,
+    countryOrder,
+    powerBlocs,
+    powerRankTypes,
+  ])
 
   useEffect(() => {
     redrawAllOverlay(assignmentsRef.current, countries)
@@ -173,6 +203,90 @@ export function useMapEditor({
     redrawSphereLayer,
     sphereLayerSettings,
   ])
+
+  function updateHistoryAvailability() {
+    setHistoryAvailability({
+      canUndo: pastHistoryRef.current.length > 0,
+      canRedo: futureHistoryRef.current.length > 0,
+    })
+  }
+
+  function getHistorySnapshot() {
+    return historyStateRef.current
+  }
+
+  function recordHistory() {
+    const snapshot = getHistorySnapshot()
+
+    if (!snapshot) {
+      return
+    }
+
+    pastHistoryRef.current.push(snapshot)
+
+    if (pastHistoryRef.current.length > HISTORY_LIMIT) {
+      pastHistoryRef.current.shift()
+    }
+
+    futureHistoryRef.current = []
+    updateHistoryAvailability()
+  }
+
+  function restoreHistorySnapshot(snapshot) {
+    historyStateRef.current = snapshot
+    assignmentsRef.current = snapshot.assignments
+    setActiveCountryId(snapshot.activeCountryId)
+    setAssignments(snapshot.assignments)
+    setAutonomyTypes(snapshot.autonomyTypes)
+    setCountries(snapshot.countries)
+    setCountryOrder(snapshot.countryOrder)
+    setPowerBlocs(snapshot.powerBlocs)
+    setPowerRankTypes(snapshot.powerRankTypes)
+    redrawAllOverlay(snapshot.assignments, snapshot.countries)
+    redrawSphereLayer(
+      snapshot.assignments,
+      snapshot.countries,
+      snapshot.autonomyTypes,
+      snapshot.powerRankTypes,
+      snapshot.powerBlocs,
+      sphereLayerSettingsRef.current,
+    )
+  }
+
+  function undo() {
+    const previousSnapshot = pastHistoryRef.current.pop()
+    const currentSnapshot = getHistorySnapshot()
+
+    if (!previousSnapshot || !currentSnapshot) {
+      return
+    }
+
+    futureHistoryRef.current.push(currentSnapshot)
+    restoreHistorySnapshot(previousSnapshot)
+    updateHistoryAvailability()
+    setStatus('실행 취소')
+  }
+
+  function redo() {
+    const nextSnapshot = futureHistoryRef.current.pop()
+    const currentSnapshot = getHistorySnapshot()
+
+    if (!nextSnapshot || !currentSnapshot) {
+      return
+    }
+
+    pastHistoryRef.current.push(currentSnapshot)
+    restoreHistorySnapshot(nextSnapshot)
+    updateHistoryAvailability()
+    setStatus('다시 실행')
+  }
+
+  function clearHistory() {
+    pastHistoryRef.current = []
+    futureHistoryRef.current = []
+    historyTransactionRef.current = false
+    updateHistoryAvailability()
+  }
 
   function drawSphereForProvinces(provinces, countryId) {
     const appearance = countryId
@@ -251,6 +365,25 @@ export function useMapEditor({
       paintUnit === 'state' && clickedState
         ? clickedState.provinces.filter((province) => !isWater(province))
         : [clicked.province]
+    const assignmentsChanged = landProvinces.some((province) =>
+      activeTool === 'erase'
+        ? Boolean(assignmentsRef.current[province.id])
+        : assignmentsRef.current[province.id] !== activeCountryId,
+    )
+
+    if (!assignmentsChanged) {
+      return
+    }
+
+    if (paintMode === 'multi') {
+      if (!historyTransactionRef.current) {
+        recordHistory()
+        historyTransactionRef.current = true
+      }
+    } else {
+      recordHistory()
+    }
+
     const nextAssignments = { ...assignmentsRef.current }
 
     for (const province of landProvinces) {
@@ -334,6 +467,7 @@ export function useMapEditor({
 
     isPaintingRef.current = false
     lastPaintedProvinceRef.current = null
+    historyTransactionRef.current = false
   }
 
   function addCountry() {
@@ -354,6 +488,7 @@ export function useMapEditor({
       color = `#${((0x4f46e5 + colorStep * 0x12345) & 0xffffff).toString(16).padStart(6, '0')}`
     }
 
+    recordHistory()
     setCountries((currentCountries) => ({
       ...currentCountries,
       [countryId]: {
@@ -430,6 +565,7 @@ export function useMapEditor({
       return false
     }
 
+    recordHistory()
     setCountries(nextCountries)
     setStatus('국가 정보가 적용되었습니다.')
     return true
@@ -437,7 +573,16 @@ export function useMapEditor({
 
   function reorderCountries(orderedCountryIds) {
     const knownCountryIds = new Set(Object.keys(countries))
-    setCountryOrder(orderedCountryIds.filter((countryId) => knownCountryIds.has(countryId)))
+    const nextCountryOrder = orderedCountryIds.filter((countryId) =>
+      knownCountryIds.has(countryId),
+    )
+
+    if (nextCountryOrder.every((countryId, index) => countryOrder[index] === countryId)) {
+      return
+    }
+
+    recordHistory()
+    setCountryOrder(nextCountryOrder)
   }
 
   function applySphereLayerSettings(nextSettings) {
@@ -494,6 +639,7 @@ export function useMapEditor({
       5,
     )
 
+    recordHistory()
     setAutonomyTypes((currentTypes) => ({
       ...currentTypes,
       [typeId]: type,
@@ -525,6 +671,7 @@ export function useMapEditor({
       return false
     }
 
+    recordHistory()
     setAutonomyTypes((currentTypes) => ({
       ...currentTypes,
       [typeId]: {
@@ -559,6 +706,7 @@ export function useMapEditor({
       return false
     }
 
+    recordHistory()
     setAutonomyTypes((currentTypes) => {
       const nextTypes = { ...currentTypes }
       delete nextTypes[typeId]
@@ -575,6 +723,7 @@ export function useMapEditor({
       'level',
       5,
     )
+    recordHistory()
     setPowerRankTypes((currentTypes) => ({ ...currentTypes, [typeId]: type }))
   }
 
@@ -598,6 +747,7 @@ export function useMapEditor({
       return false
     }
 
+    recordHistory()
     setPowerRankTypes((currentTypes) => ({
       ...currentTypes,
       [typeId]: {
@@ -619,6 +769,7 @@ export function useMapEditor({
       return false
     }
 
+    recordHistory()
     setPowerRankTypes((currentTypes) => {
       const nextTypes = { ...currentTypes }
       delete nextTypes[typeId]
@@ -653,6 +804,7 @@ export function useMapEditor({
       return false
     }
 
+    recordHistory()
     setPowerBlocs(nextPowerBlocs)
     setStatus('세력 블록이 적용되었습니다.')
     return true
@@ -679,6 +831,7 @@ export function useMapEditor({
       return false
     }
 
+    recordHistory()
     setPowerBlocs((currentPowerBlocs) => {
       const nextPowerBlocs = { ...currentPowerBlocs }
       delete nextPowerBlocs[blocId]
@@ -693,42 +846,45 @@ export function useMapEditor({
       return
     }
 
-    setAssignments((currentAssignments) => {
-      const nextAssignments = { ...currentAssignments }
-      const stateId = stateByProvinceRef.current.get(selectedProvince.province.id)
-      const selectedProvinceState = stateId ? statesByIdRef.current.get(stateId) : null
-      const provincesToClear =
-        paintUnit === 'state' && selectedProvinceState
-          ? selectedProvinceState.provinces
-          : [selectedProvince.province]
+    const stateId = stateByProvinceRef.current.get(selectedProvince.province.id)
+    const selectedProvinceState = stateId ? statesByIdRef.current.get(stateId) : null
+    const provincesToClear =
+      paintUnit === 'state' && selectedProvinceState
+        ? selectedProvinceState.provinces
+        : [selectedProvince.province]
 
-      for (const province of provincesToClear) {
-        delete nextAssignments[province.id]
-      }
+    if (!provincesToClear.some((province) => assignmentsRef.current[province.id])) {
+      return
+    }
 
-      assignmentsRef.current = nextAssignments
+    recordHistory()
+    const nextAssignments = { ...assignmentsRef.current }
 
-      if (provincesToClear.length > 1) {
-        drawProvincesOverlay(
-          overlayCanvasRef.current,
-          overlayImageDataRef.current,
-          provincePixelCacheRef.current,
-          provincesToClear,
-          null,
-        )
-      } else {
-        drawProvinceOverlay(
-          overlayCanvasRef.current,
-          overlayImageDataRef.current,
-          provincePixelCacheRef.current,
-          selectedProvince.province,
-          null,
-        )
-      }
-      drawSphereForProvinces(provincesToClear, null)
+    for (const province of provincesToClear) {
+      delete nextAssignments[province.id]
+    }
 
-      return nextAssignments
-    })
+    assignmentsRef.current = nextAssignments
+
+    if (provincesToClear.length > 1) {
+      drawProvincesOverlay(
+        overlayCanvasRef.current,
+        overlayImageDataRef.current,
+        provincePixelCacheRef.current,
+        provincesToClear,
+        null,
+      )
+    } else {
+      drawProvinceOverlay(
+        overlayCanvasRef.current,
+        overlayImageDataRef.current,
+        provincePixelCacheRef.current,
+        selectedProvince.province,
+        null,
+      )
+    }
+    drawSphereForProvinces(provincesToClear, null)
+    setAssignments(nextAssignments)
   }
 
   async function loadPreset(path = selectedPresetPath) {
@@ -744,6 +900,17 @@ export function useMapEditor({
     }
 
     const normalizedPreset = normalizePreset(await response.json())
+    const nextActiveCountryId = normalizedPreset.countryOrder[0] ?? ''
+    clearHistory()
+    historyStateRef.current = {
+      activeCountryId: nextActiveCountryId,
+      assignments: normalizedPreset.provinceAssignments,
+      autonomyTypes: normalizedPreset.autonomyTypes,
+      countries: normalizedPreset.countries,
+      countryOrder: normalizedPreset.countryOrder,
+      powerBlocs: normalizedPreset.powerBlocs,
+      powerRankTypes: normalizedPreset.powerRankTypes,
+    }
     assignmentsRef.current = normalizedPreset.provinceAssignments
     setAutonomyTypes(normalizedPreset.autonomyTypes)
     setPowerRankTypes(normalizedPreset.powerRankTypes)
@@ -760,7 +927,7 @@ export function useMapEditor({
       normalizedPreset.powerBlocs,
       sphereLayerSettingsRef.current,
     )
-    setActiveCountryId(normalizedPreset.countryOrder[0] ?? '')
+    setActiveCountryId(nextActiveCountryId)
     setActivePage('loader')
     setStatus('프리셋 로드 완료')
   }
@@ -781,6 +948,8 @@ export function useMapEditor({
     applySphereLayerSettings,
     countries,
     countryOrder,
+    canRedo: historyAvailability.canRedo,
+    canUndo: historyAvailability.canUndo,
     deleteAutonomyType,
     deletePowerBloc,
     deletePowerRankType,
@@ -794,6 +963,7 @@ export function useMapEditor({
     powerRankTypes,
     preset,
     removeAssignment,
+    redo,
     reorderCountries,
     selectedCountry,
     selectedProvince,
@@ -807,5 +977,6 @@ export function useMapEditor({
     updateCountry,
     updatePowerBloc,
     updatePowerRankType,
+    undo,
   }
 }

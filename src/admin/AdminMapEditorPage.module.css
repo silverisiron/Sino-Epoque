@@ -81,6 +81,25 @@
   transform: translateX(-50%);
 }
 
+.mapHistoryTools {
+  position: absolute;
+  z-index: 5;
+  top: 16px;
+  left: 50%;
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid #aeb7c2;
+  background: #ffffff;
+  transform: translateX(-50%);
+}
+
+.mapHistoryTools button {
+  min-width: 32px;
+  font-size: 18px;
+  line-height: 1;
+}
+
 .mapToolbar > li {
   display: flex;
   gap: 4px;

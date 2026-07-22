@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CountryPanel } from '../editor/CountryPanel'
 import { DataManagerPanel } from '../editor/DataManagerPanel'
 import { MapCanvas } from '../editor/MapCanvas'
@@ -36,6 +36,37 @@ export function AdminMapEditorPage() {
     stateByProvinceRef: mapData.stateByProvinceRef,
     statesByIdRef: mapData.statesByIdRef,
   })
+  const { redo, undo } = editor
+
+  useEffect(() => {
+    function handleHistoryShortcut(event) {
+      const target = event.target
+
+      if (
+        event.defaultPrevented ||
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target?.isContentEditable ||
+        (!event.ctrlKey && !event.metaKey)
+      ) {
+        return
+      }
+
+      const key = event.key.toLowerCase()
+
+      if (key === 'z' && !event.shiftKey) {
+        event.preventDefault()
+        undo()
+      } else if (key === 'y' || (key === 'z' && event.shiftKey)) {
+        event.preventDefault()
+        redo()
+      }
+    }
+
+    window.addEventListener('keydown', handleHistoryShortcut)
+    return () => window.removeEventListener('keydown', handleHistoryShortcut)
+  }, [redo, undo])
 
   return (
     <main className={styles.appShell}>
@@ -81,6 +112,8 @@ export function AdminMapEditorPage() {
         borderCanvasRef={mapData.borderCanvasRef}
         borderMode={borderMode}
         canvasStyle={viewport.canvasStyle}
+        canRedo={editor.canRedo}
+        canUndo={editor.canUndo}
         isMapRendering={mapData.isMapRendering}
         mapScrollRef={viewport.mapScrollRef}
         onActiveToolChange={editor.setActiveTool}
@@ -91,6 +124,8 @@ export function AdminMapEditorPage() {
         onPointerDown={editor.handlePointerDown}
         onPointerMove={editor.handlePointerMove}
         onPointerUp={editor.handlePointerUp}
+        onRedo={editor.redo}
+        onUndo={editor.undo}
         onZoomIn={() => viewport.updateZoom(viewport.zoomRef.current * 1.15)}
         onZoomOut={() => viewport.updateZoom(viewport.zoomRef.current / 1.15)}
         overlayCanvasRef={mapData.overlayCanvasRef}

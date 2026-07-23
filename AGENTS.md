@@ -5,6 +5,7 @@
 - React
 - React Compiler
 - Tailwind CSS v4
+- Lucide Icons (lucide-react)
 
 ## Development Rules
 

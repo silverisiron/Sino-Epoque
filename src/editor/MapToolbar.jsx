@@ -2,17 +2,11 @@ import styles from '../admin/AdminMapEditorPage.module.css'
 
 export function MapToolbar({
   activeTool,
-  borderMode,
   onActiveToolChange,
-  onBorderModeChange,
-  onOpenSphereLayer,
   onPaintModeChange,
   onPaintUnitChange,
-  onZoomIn,
-  onZoomOut,
   paintMode,
   paintUnit,
-  sphereLayerActive,
 }) {
   return (
     <ul className={styles.mapToolbar} role="toolbar" aria-label="지도 도구">
@@ -67,6 +61,16 @@ export function MapToolbar({
       <li>
         <button
           type="button"
+          aria-pressed={activeTool === 'eyedropper'}
+          onClick={() => onActiveToolChange('eyedropper')}
+        >
+          스포이드
+        </button>
+      </li>
+
+      <li>
+        <button
+          type="button"
           aria-pressed={activeTool === 'erase'}
           onClick={() => onActiveToolChange('erase')}
         >
@@ -81,53 +85,6 @@ export function MapToolbar({
           onClick={() => onActiveToolChange('hand')}
         >
           화면 이동
-        </button>
-      </li>
-
-      <li className={styles.toolbarItem}>
-        <button
-          type="button"
-          aria-pressed={sphereLayerActive}
-          onClick={onOpenSphereLayer}
-        >
-          레이어
-        </button>
-        <details className={styles.toolbarMenu}>
-          <summary aria-label="국경선 설정">▽</summary>
-          <div className={styles.toolbarMenuContent}>
-            <div className={styles.paintModes} role="group" aria-label="경계선 표시">
-              <button
-                type="button"
-                aria-pressed={borderMode === 'province'}
-                onClick={() => onBorderModeChange('province')}
-              >
-                Province 국경
-              </button>
-              <button
-                type="button"
-                aria-pressed={borderMode === 'state'}
-                onClick={() => onBorderModeChange('state')}
-              >
-                State 국경
-              </button>
-              <button
-                type="button"
-                aria-pressed={borderMode === 'none'}
-                onClick={() => onBorderModeChange('none')}
-              >
-                국경 표시 없음
-              </button>
-            </div>
-          </div>
-        </details>
-      </li>
-
-      <li className={styles.zoomButtons} aria-label="확대 축소">
-        <button type="button" aria-label="확대" onClick={onZoomIn}>
-          +
-        </button>
-        <button type="button" aria-label="축소" onClick={onZoomOut}>
-          -
         </button>
       </li>
     </ul>

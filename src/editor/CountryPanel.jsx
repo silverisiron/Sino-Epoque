@@ -31,12 +31,22 @@ function CountryRow({
       className={styles.countryRow}
       data-active={activeCountryId === countryId}
       data-dragging={draggedCountryId === countryId}
-      draggable
-      onDragEnd={onCountryDragEnd}
       onDragOver={(event) => event.preventDefault()}
-      onDragStart={(event) => onCountryDragStart(event, countryId)}
       onDrop={(event) => onCountryDrop(event, countryId)}
+      onClick={() => onSelectCountry(countryId)}
     >
+      <button
+        type="button"
+        className={styles.countryDragHandle}
+        draggable
+        aria-label={`${country.name} 순서 변경`}
+        title="드래그하여 순서 변경"
+        onClick={(event) => event.stopPropagation()}
+        onDragEnd={onCountryDragEnd}
+        onDragStart={(event) => onCountryDragStart(event, countryId)}
+      >
+        ⋮
+      </button>
       <button
         type="button"
         className={styles.swatchButton}

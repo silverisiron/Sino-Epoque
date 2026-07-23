@@ -39,18 +39,6 @@
   gap: 6px;
 }
 
-.zoomButtons {
-  display: grid;
-  gap: 4px;
-}
-
-.zoomButtons button {
-  width: 32px;
-  min-height: 28px;
-  font-size: 18px;
-  line-height: 1;
-}
-
 .mapPanel {
   position: relative;
   min-width: 0;
@@ -81,21 +69,30 @@
   transform: translateX(-50%);
 }
 
-.mapHistoryTools {
+.mapControlGroup {
   position: absolute;
   z-index: 5;
-  top: 16px;
-  left: 50%;
-  display: flex;
+  top: 50%;
+  display: grid;
   gap: 4px;
+  margin: 0;
   padding: 6px;
   border: 1px solid #aeb7c2;
   background: #ffffff;
-  transform: translateX(-50%);
+  transform: translateY(-50%);
 }
 
-.mapHistoryTools button {
-  min-width: 32px;
+.mapControlGroupLeft {
+  left: 0;
+}
+
+.mapControlGroupRight {
+  right: 0;
+}
+
+.mapControlGroup button {
+  width: 32px;
+  min-height: 28px;
   font-size: 18px;
   line-height: 1;
 }
@@ -238,6 +235,26 @@
   overscroll-behavior: contain;
 }
 
+.mapDisplayPanel {
+  display: grid;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #d5dbe3;
+}
+
+.mapDisplayControls {
+  display: flex;
+  gap: 6px;
+}
+
+.mapDisplayControls button {
+  flex: 1;
+}
+
+.mapLayerButton {
+  width: 100%;
+}
+
 .countryList {
   display: grid;
   gap: 8px;
@@ -276,12 +293,26 @@
 
 .countryRow {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) auto;
+  grid-template-columns: 14px 30px minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
   padding: 6px;
   border: 1px solid #d5dbe3;
+  cursor: pointer;
+}
+
+.countryDragHandle {
+  align-self: stretch;
+  width: 14px;
+  min-width: 14px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
   cursor: grab;
+}
+
+.countryDragHandle:active {
+  cursor: grabbing;
 }
 
 .countryRow[data-active='true'] {

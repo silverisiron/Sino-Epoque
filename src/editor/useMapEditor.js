@@ -355,9 +355,24 @@ export function useMapEditor({
     if (
       activePage !== 'editor' ||
       activeTool === 'hand' ||
-      isWater(clicked.province) ||
-      (activeTool === 'paint' && !activeCountry)
+      isWater(clicked.province)
     ) {
+      return
+    }
+
+    if (activeTool === 'eyedropper') {
+      const sampledCountryId = assignmentsRef.current[clicked.province.id]
+
+      if (sampledCountryId && countries[sampledCountryId]) {
+        setActiveCountryId(sampledCountryId)
+        setActiveTool('paint')
+        setStatus(`${countries[sampledCountryId].name} 선택`)
+      }
+
+      return
+    }
+
+    if (activeTool === 'paint' && !activeCountry) {
       return
     }
 
@@ -375,7 +390,7 @@ export function useMapEditor({
       return
     }
 
-    if (paintMode === 'multi') {
+    if (paintMode === 'multi' && activeTool !== 'eyedropper') {
       if (!historyTransactionRef.current) {
         recordHistory()
         historyTransactionRef.current = true
@@ -438,7 +453,7 @@ export function useMapEditor({
       return
     }
 
-    if (paintMode === 'multi') {
+    if (paintMode === 'multi' && activeTool !== 'eyedropper') {
       isPaintingRef.current = true
       lastPaintedProvinceRef.current = null
       event.currentTarget.setPointerCapture(event.pointerId)
@@ -455,7 +470,12 @@ export function useMapEditor({
       return
     }
 
-    if (activeTool !== 'hand' && paintMode === 'multi' && isPaintingRef.current) {
+    if (
+      activeTool !== 'hand' &&
+      activeTool !== 'eyedropper' &&
+      paintMode === 'multi' &&
+      isPaintingRef.current
+    ) {
       applyToolToProvince(getProvinceFromPointer(event))
     }
   }

@@ -1,19 +1,17 @@
 import styles from '../admin/AdminMapEditorPage.module.css'
+import { MapControlGroup } from './MapControlGroup'
 import { MapToolbar } from './MapToolbar'
 
 export function MapCanvas({
   activeTool,
   baseCanvasRef,
   borderCanvasRef,
-  borderMode,
   canRedo,
   canUndo,
   canvasStyle,
   isMapRendering,
   mapScrollRef,
   onActiveToolChange,
-  onBorderModeChange,
-  onOpenSphereLayer,
   onPaintModeChange,
   onPaintUnitChange,
   onPointerDown,
@@ -27,7 +25,6 @@ export function MapCanvas({
   paintMode,
   paintUnit,
   sphereCanvasRef,
-  sphereLayerActive,
 }) {
   return (
     <section className={styles.mapPanel} aria-label="지도 캔버스">
@@ -59,7 +56,7 @@ export function MapCanvas({
         ) : null}
       </div>
 
-      <div className={styles.mapHistoryTools} role="toolbar" aria-label="편집 기록">
+      <MapControlGroup label="편집 기록" position="left">
         <button
           type="button"
           aria-label="실행 취소"
@@ -78,21 +75,24 @@ export function MapCanvas({
         >
           ↷
         </button>
-      </div>
+      </MapControlGroup>
+
+      <MapControlGroup label="확대 축소" position="right">
+        <button type="button" aria-label="확대" onClick={onZoomIn}>
+          +
+        </button>
+        <button type="button" aria-label="축소" onClick={onZoomOut}>
+          -
+        </button>
+      </MapControlGroup>
 
       <MapToolbar
         activeTool={activeTool}
-        borderMode={borderMode}
         onActiveToolChange={onActiveToolChange}
-        onBorderModeChange={onBorderModeChange}
-        onOpenSphereLayer={onOpenSphereLayer}
         onPaintModeChange={onPaintModeChange}
         onPaintUnitChange={onPaintUnitChange}
-        onZoomIn={onZoomIn}
-        onZoomOut={onZoomOut}
         paintMode={paintMode}
         paintUnit={paintUnit}
-        sphereLayerActive={sphereLayerActive}
       />
     </section>
   )

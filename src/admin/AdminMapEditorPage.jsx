@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { CountryPanel } from '../editor/CountryPanel'
 import { DataManagerPanel } from '../editor/DataManagerPanel'
 import { MapCanvas } from '../editor/MapCanvas'
+import { MapDisplayPanel } from '../editor/MapDisplayPanel'
 import { PresetLoader } from '../editor/PresetLoader'
 import { ProvinceInfo } from '../editor/ProvinceInfo'
 import { SphereLayerModal } from '../editor/SphereLayerModal'
@@ -37,6 +38,8 @@ export function AdminMapEditorPage() {
     statesByIdRef: mapData.statesByIdRef,
   })
   const { redo, undo } = editor
+  const sphereLayerActive =
+    editor.sphereLayerSettings.selectedIdsByMode[editor.sphereLayerSettings.mode]?.length > 0
 
   useEffect(() => {
     function handleHistoryShortcut(event) {
@@ -110,15 +113,12 @@ export function AdminMapEditorPage() {
         activeTool={editor.activeTool}
         baseCanvasRef={mapData.baseCanvasRef}
         borderCanvasRef={mapData.borderCanvasRef}
-        borderMode={borderMode}
         canvasStyle={viewport.canvasStyle}
         canRedo={editor.canRedo}
         canUndo={editor.canUndo}
         isMapRendering={mapData.isMapRendering}
         mapScrollRef={viewport.mapScrollRef}
         onActiveToolChange={editor.setActiveTool}
-        onBorderModeChange={setBorderMode}
-        onOpenSphereLayer={() => setIsSphereLayerModalOpen(true)}
         onPaintModeChange={editor.setPaintMode}
         onPaintUnitChange={editor.setPaintUnit}
         onPointerDown={editor.handlePointerDown}
@@ -132,28 +132,31 @@ export function AdminMapEditorPage() {
         paintMode={editor.paintMode}
         paintUnit={editor.paintUnit}
         sphereCanvasRef={mapData.sphereCanvasRef}
-        sphereLayerActive={
-          editor.sphereLayerSettings.selectedIdsByMode[
-            editor.sphereLayerSettings.mode
-          ]?.length > 0
-        }
       />
 
       <section className={styles.sidePanel} aria-label="국가 및 맵 정보">
         {page === 'editor' ? (
-          <CountryPanel
-            activeCountryId={editor.activeCountryId}
-            autonomyTypes={editor.autonomyTypes}
-            countries={editor.countries}
-            countryOrder={editor.countryOrder}
-            onAddCountry={editor.addCountry}
-            onCountryOrderChange={editor.reorderCountries}
-            onCountryUpdate={editor.updateCountry}
-            onSelectCountry={editor.setActiveCountryId}
-            powerBlocs={editor.powerBlocs}
-            powerRankTypes={editor.powerRankTypes}
-            preset={editor.preset}
-          />
+          <>
+            <MapDisplayPanel
+              borderMode={borderMode}
+              onBorderModeChange={setBorderMode}
+              onOpenSphereLayer={() => setIsSphereLayerModalOpen(true)}
+              sphereLayerActive={sphereLayerActive}
+            />
+            <CountryPanel
+              activeCountryId={editor.activeCountryId}
+              autonomyTypes={editor.autonomyTypes}
+              countries={editor.countries}
+              countryOrder={editor.countryOrder}
+              onAddCountry={editor.addCountry}
+              onCountryOrderChange={editor.reorderCountries}
+              onCountryUpdate={editor.updateCountry}
+              onSelectCountry={editor.setActiveCountryId}
+              powerBlocs={editor.powerBlocs}
+              powerRankTypes={editor.powerRankTypes}
+              preset={editor.preset}
+            />
+          </>
         ) : (
           <PresetLoader
             onLoadPreset={() => editor.loadPreset()}

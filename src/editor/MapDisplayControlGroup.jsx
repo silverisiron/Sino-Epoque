@@ -1,10 +1,8 @@
-import styles from '../admin/AdminMapEditorPage.module.css'
-
 export function MapDisplayControlGroup({ children, legend }) {
   return (
-    <fieldset className={styles.mapDisplayControls}>
-      <legend>{legend}</legend>
-      <div className={styles.mapDisplayControlItems}>{children}</div>
+    <fieldset className="m-0 border border-[#d5dbe3] p-2">
+      <legend className="px-1">{legend}</legend>
+      <div className="flex gap-1.5 [&>*]:min-w-0 [&>*]:flex-1">{children}</div>
     </fieldset>
   )
 }

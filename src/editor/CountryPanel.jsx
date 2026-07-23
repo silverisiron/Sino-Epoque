@@ -1,5 +1,4 @@
 import { useDeferredValue, useMemo, useState } from 'react'
-import styles from '../admin/AdminMapEditorPage.module.css'
 import { downloadJson } from '../map/mapData'
 import { createCountryBlocIndex, getTopIndependentCountryId } from '../map/worldRelations'
 import { CountryEditModal } from './CountryEditModal'
@@ -28,7 +27,7 @@ function CountryRow({
 }) {
   return (
     <li
-      className={styles.countryRow}
+      className="grid cursor-pointer grid-cols-[14px_30px_minmax(0,1fr)_auto] items-center gap-2 border border-[#d5dbe3] p-1.5 data-[active=true]:border-[#17202a] data-[dragging=true]:opacity-50"
       data-active={activeCountryId === countryId}
       data-dragging={draggedCountryId === countryId}
       onDragOver={(event) => event.preventDefault()}
@@ -37,7 +36,7 @@ function CountryRow({
     >
       <button
         type="button"
-        className={styles.countryDragHandle}
+        className="w-3.5 min-w-3.5 cursor-grab self-stretch !min-h-0 !border-0 !p-0 active:cursor-grabbing"
         draggable
         aria-label={`${country.name} 순서 변경`}
         title="드래그하여 순서 변경"
@@ -49,12 +48,12 @@ function CountryRow({
       </button>
       <button
         type="button"
-        className={styles.swatchButton}
+        className="h-7 w-7 !min-h-7 border border-[#17202a]"
         style={{ backgroundColor: country.color }}
         aria-label={`${country.name} 선택`}
         onClick={() => onSelectCountry(countryId)}
       />
-      <div className={styles.countrySummary}>
+      <div className="grid min-w-0 gap-0.5 [&>span]:truncate [&>span]:text-xs [&>span]:text-[#667085] [&>strong]:truncate">
         <strong>{country.name}</strong>
         <span>
           {autonomyType.name} · {autonomyType.autonomy}
@@ -195,7 +194,7 @@ export function CountryPanel({
     <section aria-labelledby="countries-title">
       <PanelHeader headingId="countries-title" onAction={onAddCountry} title="Countries" />
 
-      <div className={styles.countrySearch}>
+      <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] gap-1.5 [&>input]:min-w-0">
         <input
           aria-label="국가 검색"
           placeholder="국가 검색"
@@ -217,7 +216,7 @@ export function CountryPanel({
         </button>
       </div>
 
-      <ul className={styles.countryList}>
+      <ul className="my-3 grid max-h-[40vh] list-none gap-2 overflow-y-auto overscroll-contain p-0">
         {visibleCountryIds.map((countryId) => {
           const country = countries[countryId]
 
@@ -243,13 +242,15 @@ export function CountryPanel({
           )
         })}
         {visibleCountryIds.length === 0 ? (
-          <li className={styles.emptyCountryList}>검색 결과가 없습니다.</li>
+          <li className="px-1.5 py-3 text-center text-[#667085]">
+            검색 결과가 없습니다.
+          </li>
         ) : null}
       </ul>
 
       <button
         type="button"
-        className={styles.fullButton}
+        className="mt-2.5 w-full"
         onClick={() => downloadJson('map-preset.json', preset)}
       >
         JSON으로 프리셋 저장하기

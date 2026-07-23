@@ -28,8 +28,11 @@ export function MapCanvas({
   sphereCanvasRef,
 }) {
   return (
-    <section className={styles.mapPanel} aria-label="지도 캔버스">
-      <div className={styles.mapScroll} ref={mapScrollRef}>
+    <section
+      className={`${styles.mapPanel} border border-[#d5dbe3] bg-white`}
+      aria-label="지도 캔버스"
+    >
+      <div className={`${styles.mapScroll} bg-[#e6ebf1]`} ref={mapScrollRef}>
         <div className={styles.mapStage}>
           <div className={styles.canvasStack} style={canvasStyle}>
             <canvas
@@ -71,7 +74,11 @@ export function MapCanvas({
         </div>
         {isMapRendering ? (
           <div className={styles.mapLoading}>
-            <div className={styles.loadingContent} role="status" aria-live="polite">
+            <div
+              className="flex items-center gap-2.5 border border-[#aeb7c2] bg-white px-3.5 py-2.5 text-sm font-semibold"
+              role="status"
+              aria-live="polite"
+            >
               <span className={styles.throbber} aria-hidden="true" />
               <span>로딩중...</span>
             </div>

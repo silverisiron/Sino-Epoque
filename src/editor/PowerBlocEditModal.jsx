@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import styles from '../admin/AdminMapEditorPage.module.css'
 import { createCountryBlocIndex, getAutomaticBlocMemberIds } from '../map/worldRelations'
 import { EditorModal } from './EditorModal'
 
@@ -96,9 +95,9 @@ export function PowerBlocEditModal({
         </select>
       </label>
 
-      <fieldset className={styles.blocMemberFieldset}>
-        <legend>회원국</legend>
-        <div className={styles.blocMemberList}>
+      <fieldset className="m-0 min-w-0 border border-[#d5dbe3] p-2.5">
+        <legend className="px-1 text-sm font-semibold">회원국</legend>
+        <div className="grid max-h-[36vh] gap-1 overflow-y-auto">
           {countryOrder
             .filter((countryId) => countryId !== draft.leaderCountryId)
             .map((countryId) => {
@@ -106,15 +105,21 @@ export function PowerBlocEditModal({
               const isOccupied = occupiedCountryIds.has(countryId)
 
               return (
-                <label key={countryId}>
+                <label
+                  className="grid grid-cols-[20px_minmax(0,1fr)_auto] items-center border-b border-[#e6e9ee] px-0.5 py-[5px]"
+                  key={countryId}
+                >
                   <input
+                    className="!min-h-0"
                     type="checkbox"
                     checked={isAutomatic || draft.memberCountryIds.includes(countryId)}
                     disabled={isAutomatic || isOccupied}
                     onChange={() => toggleMember(countryId)}
                   />
                   <span>{countries[countryId].name}</span>
-                  <small>{isAutomatic ? '자동' : isOccupied ? '다른 블록' : '수동'}</small>
+                  <small className="text-[#667085]">
+                    {isAutomatic ? '자동' : isOccupied ? '다른 블록' : '수동'}
+                  </small>
                 </label>
               )
             })}

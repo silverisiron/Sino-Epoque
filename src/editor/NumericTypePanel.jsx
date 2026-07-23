@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import styles from '../admin/AdminMapEditorPage.module.css'
 import { DataManager } from './DataManager'
 
 function NumericTypeRow({ inUse, onDelete, onUpdate, type, typeId, valueKey, valueLabel }) {
@@ -21,7 +20,7 @@ function NumericTypeRow({ inUse, onDelete, onUpdate, type, typeId, valueKey, val
   }
 
   return (
-    <li className={styles.customDataTypeRow}>
+    <li className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_52px_auto_auto] items-center gap-1.5 border border-[#d5dbe3] p-1.5 [&>input]:min-w-0">
       <input
         aria-label={`${valueLabel} 이름`}
         value={draft.name}
@@ -69,7 +68,7 @@ export function NumericTypePanel({
 }) {
   return (
     <DataManager heading={heading} onAdd={onAdd} summary={summary}>
-      <ul className={styles.dataTypeList}>
+      <ul className="mt-2.5 grid max-h-[32vh] list-none gap-1.5 overflow-y-auto p-0">
         {Object.entries(types)
           .sort(([, left], [, right]) => right[valueKey] - left[valueKey])
           .map(([typeId, type]) => (

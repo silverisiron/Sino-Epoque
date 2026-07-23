@@ -1,11 +1,9 @@
-import styles from '../admin/AdminMapEditorPage.module.css'
-
 export function ProvinceInfo({ isEditor, onRemoveAssignment, selectedCountry, selectedProvince, selectedState }) {
   return (
-    <section className={styles.provinceInfo} aria-labelledby="province-title">
+    <section className="border-t border-[#d5dbe3] pt-3" aria-labelledby="province-title">
       <h2 id="province-title">프로빈스</h2>
       {selectedProvince?.province ? (
-        <dl>
+        <dl className="grid gap-1.5">
           <div>
             <dt>ID</dt>
             <dd>{selectedProvince.province.id}</dd>
@@ -31,7 +29,7 @@ export function ProvinceInfo({ isEditor, onRemoveAssignment, selectedCountry, se
         <p>프로빈스를 클릭하세요.</p>
       )}
       {isEditor ? (
-        <button type="button" className={styles.fullButton} onClick={onRemoveAssignment}>
+        <button type="button" className="mt-2.5 w-full" onClick={onRemoveAssignment}>
           프로빈스 선택 해제
         </button>
       ) : null}

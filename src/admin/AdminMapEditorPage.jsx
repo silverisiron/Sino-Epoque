@@ -9,7 +9,6 @@ import { SphereLayerModal } from '../editor/SphereLayerModal'
 import { useMapEditor } from '../editor/useMapEditor'
 import { useMapData } from '../map/useMapData'
 import { useMapViewport } from '../map/useMapViewport'
-import styles from './AdminMapEditorPage.module.css'
 
 export function AdminMapEditorPage() {
   const [page, setPage] = useState('editor')
@@ -83,13 +82,13 @@ export function AdminMapEditorPage() {
   }, [redo, undo])
 
   return (
-    <main className={styles.appShell}>
-      <header className={styles.appHeader}>
+    <main className="grid h-screen grid-cols-[320px_minmax(0,1fr)_320px] grid-rows-[auto_minmax(0,1fr)] gap-3 bg-[#f4f5f7] p-3 text-[#17202a] [&_button]:min-h-8 [&_button]:border [&_button]:border-[#aeb7c2] [&_button]:bg-white [&_button]:text-sm [&_button[aria-pressed=true]]:bg-[#17202a] [&_button[aria-pressed=true]]:text-white [&_dd]:text-sm [&_dd]:font-semibold [&_dl]:m-0 [&_dt]:text-sm [&_dt]:text-[#667085] [&_h1]:m-0 [&_h1]:text-xl [&_h2]:m-0 [&_h2]:text-base [&_input]:min-h-8 [&_input]:text-sm [&_label]:grid [&_label]:gap-1.5 [&_label]:text-sm [&_p]:m-0 [&_p]:text-sm [&_select]:min-h-8 [&_select]:text-sm max-[900px]:h-auto max-[900px]:min-h-screen max-[900px]:grid-cols-1">
+      <header className="col-span-full flex items-center justify-between gap-4 border border-[#d5dbe3] bg-white p-3">
         <div>
           <h1>Province Map Tool</h1>
           <p>{mapData.status}</p>
         </div>
-        <nav aria-label="페이지">
+        <nav className="flex min-h-8 items-center justify-between gap-3" aria-label="페이지">
           <button type="button" aria-pressed={page === 'editor'} onClick={() => setPage('editor')}>
             지도 편집기
           </button>
@@ -99,7 +98,10 @@ export function AdminMapEditorPage() {
         </nav>
       </header>
 
-      <section className={styles.sidePanel} aria-label="데이터 도구">
+      <section
+        className="grid min-h-0 content-start gap-[18px] overflow-y-auto overscroll-contain border border-[#d5dbe3] bg-white p-3 max-[900px]:overflow-y-visible"
+        aria-label="데이터 도구"
+      >
         {page === 'editor' ? (
           <DataManagerPanel
             autonomyTypes={editor.autonomyTypes}
@@ -146,7 +148,10 @@ export function AdminMapEditorPage() {
         sphereCanvasRef={mapData.sphereCanvasRef}
       />
 
-      <section className={styles.sidePanel} aria-label="국가 및 맵 정보">
+      <section
+        className="grid min-h-0 content-start gap-[18px] overflow-y-auto overscroll-contain border border-[#d5dbe3] bg-white p-3 max-[900px]:overflow-y-visible"
+        aria-label="국가 및 맵 정보"
+      >
         {page === 'editor' ? (
           <>
             <MapDisplayPanel

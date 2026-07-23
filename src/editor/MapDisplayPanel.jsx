@@ -1,4 +1,3 @@
-import styles from '../admin/AdminMapEditorPage.module.css'
 import { MapDisplayControlGroup } from './MapDisplayControlGroup'
 import { PanelHeader } from './PanelHeader'
 
@@ -11,7 +10,10 @@ export function MapDisplayPanel({
   sphereLayerActive,
 }) {
   return (
-    <section className={styles.mapDisplayPanel} aria-labelledby="map-display-title">
+    <section
+      className="grid gap-2.5 border-b border-[#d5dbe3] pb-3"
+      aria-labelledby="map-display-title"
+    >
       <PanelHeader headingId="map-display-title" title="Map Display" />
 
       <MapDisplayControlGroup legend="경계선 표시">
@@ -57,7 +59,7 @@ export function MapDisplayPanel({
 
       <button
         type="button"
-        className={styles.mapLayerButton}
+        className="w-full"
         aria-pressed={sphereLayerActive}
         onClick={onOpenSphereLayer}
       >

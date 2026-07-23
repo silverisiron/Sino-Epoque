@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import styles from '../admin/AdminMapEditorPage.module.css'
 import { EditorModal } from './EditorModal'
 import { LayerTypeFieldset } from './LayerTypeFieldset'
 
@@ -98,7 +97,11 @@ export function SphereLayerModal({
       onClose={onClose}
       title="레이어 설정"
     >
-      <div className={styles.layerModeSelector} role="group" aria-label="지도 레이어 종류">
+      <div
+        className="flex gap-1.5 [&>button]:flex-1"
+        role="group"
+        aria-label="지도 레이어 종류"
+      >
         {LAYER_MODES.map(([layerMode, label]) => (
           <button
             type="button"

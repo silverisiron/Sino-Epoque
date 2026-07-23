@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import styles from '../admin/AdminMapEditorPage.module.css'
 import { EditorModal } from './EditorModal'
 
 function createsOverlordCycle(countryId, overlordId, countries) {
@@ -154,12 +153,12 @@ export function CountryEditModal({
       </label>
 
       {overlordIsInvalid ? (
-        <p className={styles.validationMessage} id="overlord-validation-message">
+        <p className="text-[#b42318]" id="overlord-validation-message">
           자치도 10 미만 유형은 종주국을 선택해야 적용할 수 있습니다.
         </p>
       ) : null}
 
-      {colorIsUsed ? <p className={styles.validationMessage}>이미 사용 중인 색상입니다.</p> : null}
+      {colorIsUsed ? <p className="text-[#b42318]">이미 사용 중인 색상입니다.</p> : null}
     </EditorModal>
   )
 }

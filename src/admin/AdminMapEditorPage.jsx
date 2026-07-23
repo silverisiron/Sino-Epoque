@@ -14,6 +14,10 @@ import styles from './AdminMapEditorPage.module.css'
 export function AdminMapEditorPage() {
   const [page, setPage] = useState('editor')
   const [borderMode, setBorderMode] = useState('state')
+  const [rasterLayers, setRasterLayers] = useState({
+    heightmap: false,
+    rivers: false,
+  })
   const [isSphereLayerModalOpen, setIsSphereLayerModalOpen] = useState(false)
   const mapData = useMapData(borderMode)
   const viewport = useMapViewport(mapData.mapSize)
@@ -40,6 +44,13 @@ export function AdminMapEditorPage() {
   const { redo, undo } = editor
   const sphereLayerActive =
     editor.sphereLayerSettings.selectedIdsByMode[editor.sphereLayerSettings.mode]?.length > 0
+
+  function handleRasterLayerChange(layerId, isVisible) {
+    setRasterLayers((currentLayers) => ({
+      ...currentLayers,
+      [layerId]: isVisible,
+    }))
+  }
 
   useEffect(() => {
     function handleHistoryShortcut(event) {
@@ -131,6 +142,7 @@ export function AdminMapEditorPage() {
         overlayCanvasRef={mapData.overlayCanvasRef}
         paintMode={editor.paintMode}
         paintUnit={editor.paintUnit}
+        rasterLayers={rasterLayers}
         sphereCanvasRef={mapData.sphereCanvasRef}
       />
 
@@ -141,6 +153,8 @@ export function AdminMapEditorPage() {
               borderMode={borderMode}
               onBorderModeChange={setBorderMode}
               onOpenSphereLayer={() => setIsSphereLayerModalOpen(true)}
+              onRasterLayerChange={handleRasterLayerChange}
+              rasterLayers={rasterLayers}
               sphereLayerActive={sphereLayerActive}
             />
             <CountryPanel

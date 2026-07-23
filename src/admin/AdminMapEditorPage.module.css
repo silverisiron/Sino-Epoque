@@ -150,6 +150,7 @@
 .provinceMap,
 .provinceOverlay,
 .sphereOverlay,
+.mapRasterLayer,
 .provinceBorder {
   position: absolute;
   inset: 0;
@@ -174,6 +175,7 @@
 
 .provinceOverlay,
 .sphereOverlay,
+.mapRasterLayer,
 .provinceBorder {
   pointer-events: none;
 }
@@ -186,14 +188,28 @@
   z-index: 2;
 }
 
-.provinceBorder {
+.mapRasterLayer {
   z-index: 3;
+  object-fit: fill;
+  mix-blend-mode: multiply;
+}
+
+.heightmapLayer {
+  opacity: 0.35;
+}
+
+.riversLayer {
+  z-index: 4;
+}
+
+.provinceBorder {
+  z-index: 5;
 }
 
 .mapLoading {
   position: absolute;
   inset: 0;
-  z-index: 4;
+  z-index: 6;
   display: grid;
   place-items: center;
   pointer-events: none;
@@ -243,12 +259,23 @@
 }
 
 .mapDisplayControls {
+  margin: 0;
+  padding: 8px;
+  border: 1px solid #d5dbe3;
+}
+
+.mapDisplayControls legend {
+  padding: 0 4px;
+}
+
+.mapDisplayControlItems {
   display: flex;
   gap: 6px;
 }
 
-.mapDisplayControls button {
+.mapDisplayControlItems > * {
   flex: 1;
+  min-width: 0;
 }
 
 .mapLayerButton {

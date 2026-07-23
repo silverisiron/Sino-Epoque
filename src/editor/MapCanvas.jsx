@@ -24,6 +24,7 @@ export function MapCanvas({
   overlayCanvasRef,
   paintMode,
   paintUnit,
+  rasterLayers,
   sphereCanvasRef,
 }) {
   return (
@@ -43,6 +44,28 @@ export function MapCanvas({
             />
             <canvas ref={overlayCanvasRef} className={styles.provinceOverlay} aria-hidden="true" />
             <canvas ref={sphereCanvasRef} className={styles.sphereOverlay} aria-hidden="true" />
+            {rasterLayers.heightmap ? (
+              <img
+                className={`${styles.mapRasterLayer} ${styles.heightmapLayer}`}
+                src="/maps/base/bmp/heightmap.bmp"
+                width="5632"
+                height="2048"
+                alt=""
+                aria-hidden="true"
+                draggable="false"
+              />
+            ) : null}
+            {rasterLayers.rivers ? (
+              <img
+                className={`${styles.mapRasterLayer} ${styles.riversLayer}`}
+                src="/maps/base/bmp/rivers.bmp"
+                width="5632"
+                height="2048"
+                alt=""
+                aria-hidden="true"
+                draggable="false"
+              />
+            ) : null}
             <canvas ref={borderCanvasRef} className={styles.provinceBorder} aria-hidden="true" />
           </div>
         </div>

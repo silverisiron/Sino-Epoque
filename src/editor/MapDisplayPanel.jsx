@@ -1,17 +1,20 @@
 import styles from '../admin/AdminMapEditorPage.module.css'
+import { MapDisplayControlGroup } from './MapDisplayControlGroup'
 import { PanelHeader } from './PanelHeader'
 
 export function MapDisplayPanel({
   borderMode,
   onBorderModeChange,
   onOpenSphereLayer,
+  onRasterLayerChange,
+  rasterLayers,
   sphereLayerActive,
 }) {
   return (
     <section className={styles.mapDisplayPanel} aria-labelledby="map-display-title">
       <PanelHeader headingId="map-display-title" title="Map Display" />
 
-      <div className={styles.mapDisplayControls} role="group" aria-label="경계선 표시">
+      <MapDisplayControlGroup legend="경계선 표시">
         <button
           type="button"
           aria-pressed={borderMode === 'province'}
@@ -33,7 +36,24 @@ export function MapDisplayPanel({
         >
           없음
         </button>
-      </div>
+      </MapDisplayControlGroup>
+
+      <MapDisplayControlGroup legend="기본 지도 레이어">
+        <button
+          type="button"
+          aria-pressed={rasterLayers.heightmap}
+          onClick={() => onRasterLayerChange('heightmap', !rasterLayers.heightmap)}
+        >
+          지형 음영
+        </button>
+        <button
+          type="button"
+          aria-pressed={rasterLayers.rivers}
+          onClick={() => onRasterLayerChange('rivers', !rasterLayers.rivers)}
+        >
+          강
+        </button>
+      </MapDisplayControlGroup>
 
       <button
         type="button"
@@ -41,7 +61,7 @@ export function MapDisplayPanel({
         aria-pressed={sphereLayerActive}
         onClick={onOpenSphereLayer}
       >
-        지도 레이어 설정
+        국가 레이어 설정
       </button>
     </section>
   )

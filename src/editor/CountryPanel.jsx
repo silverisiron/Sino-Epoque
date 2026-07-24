@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useMemo, useRef, useState } from 'react'
 import { downloadJson } from '../map/mapData'
 import { createCountryBlocIndex, getTopIndependentCountryId } from '../map/worldRelations'
 import { CountryEditModal } from './CountryEditModal'
@@ -22,9 +22,17 @@ function CountryRow({
   onCountryDragEnd,
   onCountryDragStart,
   onCountryDrop,
+  onCountryUpdate,
   onEdit,
   onSelectCountry,
 }) {
+  const colorInputRef = useRef(null)
+
+  function openColorPicker(event) {
+    event.stopPropagation()
+    colorInputRef.current?.click()
+  }
+
   return (
     <li
       className="grid cursor-pointer grid-cols-[14px_30px_minmax(0,1fr)_auto] items-center gap-2 border border-[#d5dbe3] p-1.5 data-[active=true]:border-[#17202a] data-[dragging=true]:opacity-50"
@@ -46,13 +54,28 @@ function CountryRow({
       >
         ⋮
       </button>
-      <button
-        type="button"
-        className="h-7 w-7 min-h-7! border border-[#17202a]"
-        style={{ backgroundColor: country.color }}
-        aria-label={`${country.name} 선택`}
-        onClick={() => onSelectCountry(countryId)}
-      />
+      <div className="relative h-7 w-7">
+        <button
+          type="button"
+          className="h-7 w-7 min-h-7! border border-[#17202a]"
+          style={{ backgroundColor: country.color }}
+          aria-label={`${country.name} 선택`}
+          onClick={openColorPicker}
+        />
+        <input
+          ref={colorInputRef}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 h-full w-full min-h-0! opacity-0"
+          tabIndex={-1}
+          type="color"
+          value={country.color}
+          onClick={(event) => event.stopPropagation()}
+          onChange={(event) => onCountryUpdate(countryId, {
+            ...country,
+            color: event.target.value,
+          })}
+        />
+      </div>
       <div className="grid min-w-0 gap-0.5 [&>span]:truncate [&>span]:text-xs [&>span]:text-[#667085] [&>strong]:truncate">
         <strong>{country.name}</strong>
         <span>
@@ -236,6 +259,7 @@ export function CountryPanel({
               onCountryDragEnd={() => setDraggedCountryId(null)}
               onCountryDragStart={handleCountryDragStart}
               onCountryDrop={handleCountryDrop}
+              onCountryUpdate={onCountryUpdate}
               onEdit={setEditingCountryId}
               onSelectCountry={onSelectCountry}
             />

@@ -99,7 +99,7 @@ export function AdminMapEditorPage() {
       </header>
 
       <section
-        className="grid min-h-0 content-start gap-[18px] overflow-y-auto overscroll-contain border border-[#d5dbe3] bg-white p-3 max-[900px]:overflow-y-visible"
+        className="grid min-h-0 content-start gap-4.5 overflow-y-auto overscroll-contain border border-[#d5dbe3] bg-white p-3 max-[900px]:overflow-y-visible"
         aria-label="데이터 도구"
       >
         {page === 'editor' ? (
@@ -149,7 +149,7 @@ export function AdminMapEditorPage() {
       />
 
       <section
-        className="grid min-h-0 content-start gap-[18px] overflow-y-auto overscroll-contain border border-[#d5dbe3] bg-white p-3 max-[900px]:overflow-y-visible"
+        className="grid min-h-0 content-start gap-4.5 overflow-y-auto overscroll-contain border border-[#d5dbe3] bg-white p-3 max-[900px]:overflow-y-visible"
         aria-label="국가 및 맵 정보"
       >
         {page === 'editor' ? (

@@ -26,7 +26,7 @@ export function LayerTypeFieldset({
             <div className="border-b border-[#e6e9ee] px-0.5 py-1.5" key={typeId}>
               <label className="grid grid-cols-[20px_minmax(0,1fr)_minmax(0,1fr)_28px] items-center">
                 <input
-                  className="!min-h-0"
+                  className="min-h-0!"
                   type="checkbox"
                   checked={selectedTypeIds.includes(typeId)}
                   onChange={() => onToggle(typeId)}

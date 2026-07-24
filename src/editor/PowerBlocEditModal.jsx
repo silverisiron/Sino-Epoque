@@ -106,11 +106,11 @@ export function PowerBlocEditModal({
 
               return (
                 <label
-                  className="grid grid-cols-[20px_minmax(0,1fr)_auto] items-center border-b border-[#e6e9ee] px-0.5 py-[5px]"
+                  className="grid grid-cols-[20px_minmax(0,1fr)_auto] items-center border-b border-[#e6e9ee] px-0.5 py-1.25"
                   key={countryId}
                 >
                   <input
-                    className="!min-h-0"
+                    className="min-h-0!"
                     type="checkbox"
                     checked={isAutomatic || draft.memberCountryIds.includes(countryId)}
                     disabled={isAutomatic || isOccupied}

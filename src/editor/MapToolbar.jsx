@@ -30,7 +30,7 @@ export function MapToolbar({
             ▽
           </summary>
           <div
-            className={`${styles.toolbarMenuContent} grid w-max max-w-[280px] gap-1.5 border border-[#aeb7c2] bg-white p-1.5`}
+            className={`${styles.toolbarMenuContent} grid w-max max-w-70 gap-1.5 border border-[#aeb7c2] bg-white p-1.5`}
           >
             <div
               className="m-0 flex gap-1.5 [&>button]:flex-1"

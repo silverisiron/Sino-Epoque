@@ -36,7 +36,7 @@ function CountryRow({
     >
       <button
         type="button"
-        className="w-3.5 min-w-3.5 cursor-grab self-stretch !min-h-0 !border-0 !p-0 active:cursor-grabbing"
+        className="w-3.5 min-w-3.5 cursor-grab self-stretch min-h-0! border-0! p-0! active:cursor-grabbing"
         draggable
         aria-label={`${country.name} 순서 변경`}
         title="드래그하여 순서 변경"
@@ -48,7 +48,7 @@ function CountryRow({
       </button>
       <button
         type="button"
-        className="h-7 w-7 !min-h-7 border border-[#17202a]"
+        className="h-7 w-7 min-h-7! border border-[#17202a]"
         style={{ backgroundColor: country.color }}
         aria-label={`${country.name} 선택`}
         onClick={() => onSelectCountry(countryId)}

@@ -84,6 +84,21 @@ export function SphereLayerModal({
     }))
   }
 
+  function changeAllOpacities(typeIds, opacity) {
+    setOpacityByIdByMode((currentOpacityByMode) => {
+      const nextModeOpacities = { ...currentOpacityByMode[mode] }
+
+      for (const typeId of typeIds) {
+        nextModeOpacities[typeId] = opacity
+      }
+
+      return {
+        ...currentOpacityByMode,
+        [mode]: nextModeOpacities,
+      }
+    })
+  }
+
   function applyChanges() {
     onApply({ mode, selectedIdsByMode, opacityByIdByMode })
     return true
@@ -120,6 +135,7 @@ export function SphereLayerModal({
         items={layerConfig.items}
         legend={layerConfig.legend}
         onOpacityChange={changeOpacity}
+        onOpacityChangeAll={changeAllOpacities}
         onToggle={toggleType}
         opacityByType={opacityByIdByMode[mode] ?? {}}
         selectedTypeIds={selectedIdsByMode[mode] ?? []}

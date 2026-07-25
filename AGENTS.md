@@ -22,3 +22,4 @@
 - Minimize unnecessary dependencies.
 - Preserve the existing project architecture and coding style unless instructed otherwise.
 - Make the smallest change necessary to accomplish the requested task.
+- The VS Code Codex environment not provide an interactive browser.

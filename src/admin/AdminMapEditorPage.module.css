@@ -20,22 +20,17 @@
 }
 
 .mapControlGroup {
-  position: absolute;
-  z-index: 5;
-  top: 50%;
-  transform: translateY(-50%);
+  position: fixed;
+  z-index: 20;
+  bottom: 16px;
 }
 
 .mapControlGroupLeft {
-  left: 0;
+  left: 16px;
 }
 
 .mapControlGroupRight {
-  right: 0;
-}
-
-.toolbarMenu summary::-webkit-details-marker {
-  display: none;
+  right: 16px;
 }
 
 .toolbarMenuContent {

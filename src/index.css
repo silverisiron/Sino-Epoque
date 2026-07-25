@@ -9,6 +9,8 @@
   --color-canvas: #e6ebf1;
   --color-danger: #b42318;
 
+  --spacing-editor-header: 2.5rem;
+  --spacing-map-scrollbar-clearance: 1.25rem;
   --spacing-editor-sidebar: 20rem;
   --breakpoint-editor: 56.25rem;
 }
@@ -21,7 +23,26 @@
 
 @layer components {
   .map-editor-shell {
-    @apply grid h-screen grid-cols-[var(--spacing-editor-sidebar)_minmax(0,1fr)_var(--spacing-editor-sidebar)] grid-rows-[auto_minmax(0,1fr)] max-editor:h-auto max-editor:min-h-screen max-editor:grid-cols-1;
+    --left-panel-width: var(--spacing-editor-sidebar);
+    --panel-toggle-top: calc(
+      50% +
+      ((var(--spacing-editor-header) - var(--spacing-map-scrollbar-clearance)) / 2)
+    );
+    --right-panel-width: var(--spacing-editor-sidebar);
+
+    @apply relative grid h-screen grid-rows-[auto_minmax(0,1fr)] max-editor:h-auto max-editor:min-h-screen;
+    grid-template-columns:
+      var(--left-panel-width)
+      minmax(0, 1fr)
+      var(--right-panel-width);
+  }
+
+  .map-editor-shell[data-left-panel-expanded="false"] {
+    --left-panel-width: 0rem;
+  }
+
+  .map-editor-shell[data-right-panel-expanded="false"] {
+    --right-panel-width: 0rem;
   }
 
   .map-editor-shell button {
@@ -37,6 +58,83 @@
   }
 
   .map-editor-panel {
-    @apply grid min-h-0 content-start gap-4.5 overflow-y-auto overscroll-contain border border-line bg-white p-3 max-editor:overflow-y-visible;
+    @apply grid min-h-0 min-w-0 content-start gap-4.5 overflow-y-auto overscroll-contain border border-line bg-white p-3 max-editor:overflow-y-visible;
+    transition:
+      opacity 180ms ease,
+      padding 300ms ease,
+      border-color 180ms ease,
+      visibility 0s linear;
+  }
+
+  .button-choice {
+    @apply grid min-h-8 min-w-0 cursor-pointer place-items-center border border-line-strong text-center text-sm focus-within:outline-2 focus-within:outline-offset-2;
+  }
+}
+
+@media (width < 56.25rem) {
+  .map-editor-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (width >= 56.25rem) {
+  .map-editor-shell {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows:
+      auto
+      minmax(0, 1fr)
+      var(--spacing-map-scrollbar-clearance);
+  }
+
+  .map-editor-canvas {
+    grid-column: 1;
+    grid-row: 2 / 4;
+  }
+
+  .map-editor-panel {
+    grid-column: 1;
+    grid-row: 2;
+    z-index: 10;
+    width: var(--spacing-editor-sidebar);
+    transition:
+      transform 300ms ease-in-out,
+      opacity 180ms ease,
+      visibility 0s linear;
+  }
+
+  .map-editor-panel[data-side="left"] {
+    justify-self: start;
+  }
+
+  .map-editor-panel[data-side="right"] {
+    justify-self: end;
+  }
+
+  .map-editor-panel[data-expanded="false"] {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      transform 300ms ease-in-out,
+      opacity 180ms ease,
+      visibility 0s linear 300ms;
+  }
+
+  .map-editor-panel[data-side="left"][data-expanded="false"] {
+    transform: translateX(-100%);
+  }
+
+  .map-editor-panel[data-side="right"][data-expanded="false"] {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-editor-shell,
+  .map-editor-panel {
+    transition: none;
   }
 }

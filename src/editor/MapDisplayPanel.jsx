@@ -1,3 +1,4 @@
+import { ChoiceInput } from './ChoiceInput'
 import { MapDisplayControlGroup } from './MapDisplayControlGroup'
 import { PanelHeader } from './PanelHeader'
 
@@ -17,44 +18,51 @@ export function MapDisplayPanel({
       <PanelHeader headingId="map-display-title" title="Map Display" />
 
       <MapDisplayControlGroup legend="경계선 표시">
-        <button
-          type="button"
-          aria-pressed={borderMode === 'province'}
-          onClick={() => onBorderModeChange('province')}
+        <ChoiceInput
+          checked={borderMode === 'province'}
+          name="border-mode"
+          value="province"
+          onChange={() => onBorderModeChange('province')}
         >
           Province
-        </button>
-        <button
-          type="button"
-          aria-pressed={borderMode === 'state'}
-          onClick={() => onBorderModeChange('state')}
+        </ChoiceInput>
+        <ChoiceInput
+          checked={borderMode === 'state'}
+          name="border-mode"
+          value="state"
+          onChange={() => onBorderModeChange('state')}
         >
           State
-        </button>
-        <button
-          type="button"
-          aria-pressed={borderMode === 'none'}
-          onClick={() => onBorderModeChange('none')}
+        </ChoiceInput>
+        <ChoiceInput
+          checked={borderMode === 'none'}
+          name="border-mode"
+          value="none"
+          onChange={() => onBorderModeChange('none')}
         >
           없음
-        </button>
+        </ChoiceInput>
       </MapDisplayControlGroup>
 
       <MapDisplayControlGroup legend="기본 지도 레이어">
-        <button
-          type="button"
-          aria-pressed={rasterLayers.heightmap}
-          onClick={() => onRasterLayerChange('heightmap', !rasterLayers.heightmap)}
+        <ChoiceInput
+          checked={rasterLayers.heightmap}
+          name="raster-layer"
+          type="checkbox"
+          value="heightmap"
+          onChange={(event) => onRasterLayerChange('heightmap', event.target.checked)}
         >
           지형 음영
-        </button>
-        <button
-          type="button"
-          aria-pressed={rasterLayers.rivers}
-          onClick={() => onRasterLayerChange('rivers', !rasterLayers.rivers)}
+        </ChoiceInput>
+        <ChoiceInput
+          checked={rasterLayers.rivers}
+          name="raster-layer"
+          type="checkbox"
+          value="rivers"
+          onChange={(event) => onRasterLayerChange('rivers', event.target.checked)}
         >
           강
-        </button>
+        </ChoiceInput>
       </MapDisplayControlGroup>
 
       <button

@@ -2,10 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { clampZoom } from './mapData'
 
 const WHEEL_ZOOM_SENSITIVITY = 0.001
+const MAX_ZOOM = 8
+const MOBILE_MAX_ZOOM = 2
+const MOBILE_QUERY = '(max-width: 56.249rem)'
 
 export function useMapViewport(mapSize) {
   const mapScrollRef = useRef(null)
   const mapSizeRef = useRef(mapSize)
+  const maxZoomRef = useRef(MAX_ZOOM)
   const minZoomRef = useRef(0)
   const zoomRef = useRef(0)
   const wheelDeltaRef = useRef(0)
@@ -34,7 +38,7 @@ export function useMapViewport(mapSize) {
   const updateZoom = useCallback((nextZoom, anchor) => {
     const scrollContainer = mapScrollRef.current
     const currentZoom = zoomRef.current
-    const clampedZoom = clampZoom(nextZoom, minZoomRef.current)
+    const clampedZoom = clampZoom(nextZoom, minZoomRef.current, maxZoomRef.current)
 
     if (!scrollContainer || !mapSizeRef.current || clampedZoom === currentZoom) {
       return
@@ -64,13 +68,22 @@ export function useMapViewport(mapSize) {
 
     const resizeObserver = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect
+      const nextMaxZoom = window.matchMedia(MOBILE_QUERY).matches
+        ? MOBILE_MAX_ZOOM
+        : MAX_ZOOM
+
+      maxZoomRef.current = nextMaxZoom
       setViewportSize({ width, height })
+
+      if (zoomRef.current > nextMaxZoom) {
+        updateZoom(nextMaxZoom)
+      }
     })
 
     resizeObserver.observe(scrollContainer)
 
     return () => resizeObserver.disconnect()
-  }, [])
+  }, [updateZoom])
 
   useEffect(() => {
     if (!minZoom) {

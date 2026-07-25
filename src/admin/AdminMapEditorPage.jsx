@@ -3,6 +3,7 @@ import { CountryPanel } from '../editor/CountryPanel'
 import { DataManagerPanel } from '../editor/DataManagerPanel'
 import { MapCanvas } from '../editor/MapCanvas'
 import { MapDisplayPanel } from '../editor/MapDisplayPanel'
+import { PanelCollapseButton } from '../editor/PanelCollapseButton'
 import { PresetLoader } from '../editor/PresetLoader'
 import { ProvinceInfo } from '../editor/ProvinceInfo'
 import { SphereLayerModal } from '../editor/SphereLayerModal'
@@ -17,6 +18,8 @@ export function AdminMapEditorPage() {
     heightmap: false,
     rivers: false,
   })
+  const [isLeftPanelExpanded, setIsLeftPanelExpanded] = useState(true)
+  const [isRightPanelExpanded, setIsRightPanelExpanded] = useState(true)
   const [isSphereLayerModalOpen, setIsSphereLayerModalOpen] = useState(false)
   const mapData = useMapData(borderMode)
   const viewport = useMapViewport(mapData.mapSize)
@@ -82,7 +85,11 @@ export function AdminMapEditorPage() {
   }, [redo, undo])
 
   return (
-    <main className="map-editor-shell">
+    <main
+      className="map-editor-shell"
+      data-left-panel-expanded={isLeftPanelExpanded}
+      data-right-panel-expanded={isRightPanelExpanded}
+    >
       <header className="col-span-full flex items-center justify-between px-3 py-1">
         <div className="opacity-100">
           <h1 className="sr-only">Province Map Tool</h1>
@@ -100,6 +107,9 @@ export function AdminMapEditorPage() {
 
       <section
         className="map-editor-panel"
+        data-side="left"
+        data-expanded={isLeftPanelExpanded}
+        id="data-tools-panel"
         aria-label="데이터 도구"
       >
         {page === 'editor' ? (
@@ -121,6 +131,14 @@ export function AdminMapEditorPage() {
           />
         ) : null}
       </section>
+
+      <PanelCollapseButton
+        controls="data-tools-panel"
+        expanded={isLeftPanelExpanded}
+        label="왼쪽 패널"
+        onToggle={() => setIsLeftPanelExpanded((isExpanded) => !isExpanded)}
+        side="left"
+      />
 
       <MapCanvas
         activeTool={editor.activeTool}
@@ -150,6 +168,9 @@ export function AdminMapEditorPage() {
 
       <section
         className="map-editor-panel"
+        data-side="right"
+        data-expanded={isRightPanelExpanded}
+        id="country-map-panel"
         aria-label="국가 및 맵 정보"
       >
         {page === 'editor' ? (
@@ -193,6 +214,14 @@ export function AdminMapEditorPage() {
           selectedState={editor.selectedState}
         />
       </section>
+
+      <PanelCollapseButton
+        controls="country-map-panel"
+        expanded={isRightPanelExpanded}
+        label="오른쪽 패널"
+        onToggle={() => setIsRightPanelExpanded((isExpanded) => !isExpanded)}
+        side="right"
+      />
 
       {isSphereLayerModalOpen ? (
         <SphereLayerModal

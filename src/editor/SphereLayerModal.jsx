@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ChoiceInput } from './ChoiceInput'
 import { EditorModal } from './EditorModal'
 import { LayerTypeFieldset } from './LayerTypeFieldset'
 
@@ -112,22 +113,20 @@ export function SphereLayerModal({
       onClose={onClose}
       title="레이어 설정"
     >
-      <div
-        className="flex gap-1.5 [&>button]:flex-1"
-        role="group"
-        aria-label="지도 레이어 종류"
-      >
+      <fieldset className="m-0 flex min-w-0 gap-1.5 *:flex-1">
+        <legend className="sr-only">지도 레이어 종류</legend>
         {LAYER_MODES.map(([layerMode, label]) => (
-          <button
-            type="button"
-            aria-pressed={mode === layerMode}
+          <ChoiceInput
+            checked={mode === layerMode}
             key={layerMode}
-            onClick={() => setMode(layerMode)}
+            name="sphere-layer-mode"
+            value={layerMode}
+            onChange={() => setMode(layerMode)}
           >
             {label}
-          </button>
+          </ChoiceInput>
         ))}
-      </div>
+      </fieldset>
 
       <LayerTypeFieldset
         defaultOpacity={layerConfig.defaultOpacity}

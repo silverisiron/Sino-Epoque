@@ -29,7 +29,7 @@ export function MapCanvas({
 }) {
   return (
     <section
-      className={`${styles.mapPanel} border border-line bg-white`}
+      className={`${styles.mapPanel} map-editor-canvas border border-line bg-white`}
       aria-label="지도 캔버스"
     >
       <div

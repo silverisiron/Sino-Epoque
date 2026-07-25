@@ -439,6 +439,10 @@ export function useMapEditor({
   }
 
   function handlePointerDown(event) {
+    if (event.button !== 0) {
+      return
+    }
+
     const clicked = getProvinceFromPointer(event)
 
     if (activeTool === 'hand') {
@@ -463,6 +467,14 @@ export function useMapEditor({
   }
 
   function handlePointerMove(event) {
+    if (
+      (isPaintingRef.current || panRef.current?.pointerId === event.pointerId) &&
+      (event.buttons & 1) === 0
+    ) {
+      finishPointerInteraction(event.pointerId)
+      return
+    }
+
     if (activeTool === 'hand' && panRef.current) {
       const scrollContainer = mapScrollRef.current
       scrollContainer.scrollLeft = panRef.current.scrollLeft - (event.clientX - panRef.current.startX)
@@ -480,14 +492,18 @@ export function useMapEditor({
     }
   }
 
-  function handlePointerUp(event) {
-    if (panRef.current?.pointerId === event.pointerId) {
+  function finishPointerInteraction(pointerId) {
+    if (panRef.current?.pointerId === pointerId) {
       panRef.current = null
     }
 
     isPaintingRef.current = false
     lastPaintedProvinceRef.current = null
     historyTransactionRef.current = false
+  }
+
+  function handlePointerUp(event) {
+    finishPointerInteraction(event.pointerId)
   }
 
   function addCountry() {

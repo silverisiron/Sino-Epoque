@@ -82,8 +82,8 @@ export function AdminMapEditorPage() {
   }, [redo, undo])
 
   return (
-    <main className="grid h-screen grid-cols-[320px_minmax(0,1fr)_320px] grid-rows-[auto_minmax(0,1fr)] gap-3 bg-[#f4f5f7] p-3 text-[#17202a] [&_button]:min-h-8 [&_button]:border [&_button]:border-[#aeb7c2] [&_button]:bg-white [&_button]:text-sm [&_button[aria-pressed=true]]:bg-[#17202a] [&_button[aria-pressed=true]]:text-white [&_dd]:text-sm [&_dd]:font-semibold [&_dl]:m-0 [&_dt]:text-sm [&_dt]:text-[#667085] [&_h1]:m-0 [&_h1]:text-xl [&_h2]:m-0 [&_h2]:text-base [&_input]:min-h-8 [&_input]:text-sm [&_label]:grid [&_label]:gap-1.5 [&_label]:text-sm [&_p]:m-0 [&_p]:text-sm [&_select]:min-h-8 [&_select]:text-sm max-[900px]:h-auto max-[900px]:min-h-screen max-[900px]:grid-cols-1">
-      <header className="col-span-full flex items-center justify-between gap-4 border border-[#d5dbe3] bg-white p-3">
+    <main className="grid h-screen grid-cols-[320px_minmax(0,1fr)_320px] grid-rows-[auto_minmax(0,1fr)] gap-3 bg-[#f4f5f7] text-[#17202a] [&_button]:min-h-8 [&_button]:border [&_button]:border-[#aeb7c2] [&_button]:bg-white [&_button]:text-sm [&_button[aria-pressed=true]]:bg-[#17202a] [&_button[aria-pressed=true]]:text-white [&_dd]:text-sm [&_dd]:font-semibold [&_dl]:m-0 [&_dt]:text-sm [&_dt]:text-[#667085] [&_h1]:m-0 [&_h1]:text-xl [&_h2]:m-0 [&_h2]:text-base [&_input]:min-h-8 [&_input]:text-sm [&_label]:grid [&_label]:gap-1.5 [&_label]:text-sm [&_p]:m-0 [&_p]:text-sm [&_select]:min-h-8 [&_select]:text-sm max-[900px]:h-auto max-[900px]:min-h-screen max-[900px]:grid-cols-1">
+      <header className="col-span-full flex items-center justify-between gap-4 bg-white p-3">
         <div>
           <h1>Province Map Tool</h1>
           <p>{mapData.status}</p>

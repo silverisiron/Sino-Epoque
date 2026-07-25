@@ -35,7 +35,7 @@ function CountryRow({
 
   return (
     <li
-      className="grid cursor-pointer grid-cols-[14px_30px_minmax(0,1fr)_auto] items-center gap-2 border border-[#d5dbe3] p-1.5 data-[active=true]:border-[#17202a] data-[dragging=true]:opacity-50"
+      className="grid cursor-pointer grid-cols-[14px_30px_minmax(0,1fr)_auto] items-center gap-2 border border-line p-1.5 data-[active=true]:border-ink data-[dragging=true]:opacity-50"
       data-active={activeCountryId === countryId}
       data-dragging={draggedCountryId === countryId}
       onDragOver={(event) => event.preventDefault()}
@@ -57,7 +57,7 @@ function CountryRow({
       <div className="relative h-7 w-7">
         <button
           type="button"
-          className="h-7 w-7 min-h-7! border border-[#17202a]"
+          className="h-7 w-7 min-h-7! border border-ink"
           style={{ backgroundColor: country.color }}
           aria-label={`${country.name} 선택`}
           onClick={openColorPicker}
@@ -76,7 +76,7 @@ function CountryRow({
           })}
         />
       </div>
-      <div className="grid min-w-0 gap-0.5 [&>span]:truncate [&>span]:text-xs [&>span]:text-[#667085] [&>strong]:truncate">
+      <div className="grid min-w-0 gap-0.5 [&>span]:truncate [&>span]:text-xs [&>span]:text-muted [&>strong]:truncate">
         <strong>{country.name}</strong>
         <span>
           {autonomyType.name} · {autonomyType.autonomy}
@@ -266,7 +266,7 @@ export function CountryPanel({
           )
         })}
         {visibleCountryIds.length === 0 ? (
-          <li className="px-1.5 py-3 text-center text-[#667085]">
+          <li className="px-1.5 py-3 text-center text-muted">
             검색 결과가 없습니다.
           </li>
         ) : null}

@@ -30,10 +30,10 @@ export function LayerTypeFieldset({
   )
 
   return (
-    <fieldset className="m-0 min-w-0 border border-[#d5dbe3] p-2.5">
+    <fieldset className="m-0 min-w-0 border border-line p-2.5">
       <legend className="px-1 text-sm font-semibold">{legend}</legend>
       {onOpacityChangeAll && availableTypes.length > 0 ? (
-        <label className="mb-2.5 grid grid-cols-[minmax(0,1fr)_auto] items-center border-b border-[#d5dbe3] pb-2.5 [&>input]:w-full [&>output]:min-w-12 [&>output]:text-right [&>span]:col-span-full">
+        <label className="mb-2.5 grid grid-cols-[minmax(0,1fr)_auto] items-center border-b border-line pb-2.5 [&>input]:w-full [&>output]:min-w-12 [&>output]:text-right [&>span]:col-span-full">
           <span>전체 불투명도{hasMixedOpacities ? ' (현재 평균)' : ''}</span>
           <input
             type="range"
@@ -58,7 +58,7 @@ export function LayerTypeFieldset({
             (typeof defaultOpacity === 'function' ? defaultOpacity(type) : defaultOpacity)
 
           return (
-            <div className="border-b border-[#e6e9ee] px-0.5 py-1.5" key={typeId}>
+            <div className="border-b border-divider px-0.5 py-1.5" key={typeId}>
               <label className="grid grid-cols-[20px_minmax(0,1fr)_minmax(0,1fr)_28px] items-center">
                 <input
                   className="min-h-0!"
@@ -67,7 +67,7 @@ export function LayerTypeFieldset({
                   onChange={() => onToggle(typeId)}
                 />
                 <span>{type.name}</span>
-                <small className="truncate text-[#667085]">
+                <small className="truncate text-muted">
                   {type.englishName || typeId}
                 </small>
                 {valueKey ? <strong className="text-right">{type[valueKey]}</strong> : null}

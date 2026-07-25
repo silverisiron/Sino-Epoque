@@ -1,7 +1,42 @@
 @import "tailwindcss";
 
+@theme {
+  --color-ink: #17202a;
+  --color-muted: #667085;
+  --color-line: #d5dbe3;
+  --color-line-strong: #aeb7c2;
+  --color-divider: #e6e9ee;
+  --color-canvas: #e6ebf1;
+  --color-danger: #b42318;
+
+  --spacing-editor-sidebar: 20rem;
+  --breakpoint-editor: 56.25rem;
+}
+
 @layer base {
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
+  }
+}
+
+@layer components {
+  .map-editor-shell {
+    @apply grid h-screen grid-cols-[var(--spacing-editor-sidebar)_minmax(0,1fr)_var(--spacing-editor-sidebar)] grid-rows-[auto_minmax(0,1fr)] max-editor:h-auto max-editor:min-h-screen max-editor:grid-cols-1;
+  }
+
+  .map-editor-shell button {
+    @apply min-h-8 border border-line-strong bg-white text-sm;
+  }
+
+  .map-editor-shell button[aria-pressed="true"] {
+    @apply bg-ink text-white;
+  }
+
+  .map-editor-shell select {
+    @apply min-h-8 text-sm;
+  }
+
+  .map-editor-panel {
+    @apply grid min-h-0 content-start gap-4.5 overflow-y-auto overscroll-contain border border-line bg-white p-3 max-editor:overflow-y-visible;
   }
 }

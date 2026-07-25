@@ -95,7 +95,7 @@ export function PowerBlocEditModal({
         </select>
       </label>
 
-      <fieldset className="m-0 min-w-0 border border-[#d5dbe3] p-2.5">
+      <fieldset className="m-0 min-w-0 border border-line p-2.5">
         <legend className="px-1 text-sm font-semibold">회원국</legend>
         <div className="grid max-h-[36vh] gap-1 overflow-y-auto">
           {countryOrder
@@ -106,7 +106,7 @@ export function PowerBlocEditModal({
 
               return (
                 <label
-                  className="grid grid-cols-[20px_minmax(0,1fr)_auto] items-center border-b border-[#e6e9ee] px-0.5 py-1.25"
+                  className="grid grid-cols-[20px_minmax(0,1fr)_auto] items-center border-b border-divider px-0.5 py-1.25"
                   key={countryId}
                 >
                   <input
@@ -117,7 +117,7 @@ export function PowerBlocEditModal({
                     onChange={() => toggleMember(countryId)}
                   />
                   <span>{countries[countryId].name}</span>
-                  <small className="text-[#667085]">
+                  <small className="text-muted">
                     {isAutomatic ? '자동' : isOccupied ? '다른 블록' : '수동'}
                   </small>
                 </label>

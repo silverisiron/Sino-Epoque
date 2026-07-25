@@ -29,10 +29,13 @@ export function MapCanvas({
 }) {
   return (
     <section
-      className={`${styles.mapPanel} border border-[#d5dbe3] bg-white`}
+      className={`${styles.mapPanel} border border-line bg-white`}
       aria-label="지도 캔버스"
     >
-      <div className={`${styles.mapScroll} bg-[#e6ebf1]`} ref={mapScrollRef}>
+      <div
+        className={`${styles.mapScroll} bg-canvas max-editor:max-h-[60vh]`}
+        ref={mapScrollRef}
+      >
         <div className={styles.mapStage}>
           <div className={styles.canvasStack} style={canvasStyle}>
             <canvas
@@ -75,7 +78,7 @@ export function MapCanvas({
         {isMapRendering ? (
           <div className={styles.mapLoading}>
             <div
-              className="flex items-center gap-2.5 border border-[#aeb7c2] bg-white px-3.5 py-2.5 text-sm font-semibold"
+              className="flex items-center gap-2.5 border border-line-strong bg-white px-3.5 py-2.5 text-sm font-semibold"
               role="status"
               aria-live="polite"
             >

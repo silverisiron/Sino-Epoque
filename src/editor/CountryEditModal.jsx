@@ -153,12 +153,12 @@ export function CountryEditModal({
       </label>
 
       {overlordIsInvalid ? (
-        <p className="text-[#b42318]" id="overlord-validation-message">
+        <p className="text-danger" id="overlord-validation-message">
           자치도 10 미만 유형은 종주국을 선택해야 적용할 수 있습니다.
         </p>
       ) : null}
 
-      {colorIsUsed ? <p className="text-[#b42318]">이미 사용 중인 색상입니다.</p> : null}
+      {colorIsUsed ? <p className="text-danger">이미 사용 중인 색상입니다.</p> : null}
     </EditorModal>
   )
 }

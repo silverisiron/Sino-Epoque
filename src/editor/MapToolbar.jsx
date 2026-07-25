@@ -10,7 +10,7 @@ export function MapToolbar({
 }) {
   return (
     <ul
-      className={`${styles.mapToolbar} m-0 flex list-none flex-row gap-1.5 border border-[#aeb7c2] bg-white p-1.5 [&>li]:flex [&>li]:gap-1`}
+      className={`${styles.mapToolbar} m-0 flex list-none flex-row gap-1.5 border border-line-strong bg-white p-1.5 [&>li]:flex [&>li]:gap-1`}
       role="toolbar"
       aria-label="지도 도구"
     >
@@ -24,13 +24,13 @@ export function MapToolbar({
         </button>
         <details className={styles.toolbarMenu}>
           <summary
-            className="grid min-h-8 min-w-7 cursor-pointer list-none place-items-center border border-[#aeb7c2]"
+            className="grid min-h-8 min-w-7 cursor-pointer list-none place-items-center border border-line-strong"
             aria-label="그리기 설정"
           >
             ▽
           </summary>
           <div
-            className={`${styles.toolbarMenuContent} grid w-max max-w-70 gap-1.5 border border-[#aeb7c2] bg-white p-1.5`}
+            className={`${styles.toolbarMenuContent} grid w-max max-w-70 gap-1.5 border border-line-strong bg-white p-1.5`}
           >
             <div
               className="m-0 flex gap-1.5 [&>button]:flex-1"

@@ -20,7 +20,7 @@ function NumericTypeRow({ inUse, onDelete, onUpdate, type, typeId, valueKey, val
   }
 
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_52px_auto_auto] items-center gap-1.5 border border-[#d5dbe3] p-1.5 [&>input]:min-w-0">
+    <li className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_52px_auto_auto] items-center gap-1.5 border border-line p-1.5 [&>input]:min-w-0">
       <input
         aria-label={`${valueLabel} 이름`}
         value={draft.name}

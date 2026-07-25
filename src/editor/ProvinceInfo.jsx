@@ -1,6 +1,6 @@
 export function ProvinceInfo({ isEditor, onRemoveAssignment, selectedCountry, selectedProvince, selectedState }) {
   return (
-    <section className="border-t border-[#d5dbe3] pt-3" aria-labelledby="province-title">
+    <section className="border-t border-line pt-3" aria-labelledby="province-title">
       <h2 id="province-title">프로빈스</h2>
       {selectedProvince?.province ? (
         <dl className="grid gap-1.5">

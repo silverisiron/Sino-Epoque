@@ -11,7 +11,7 @@ export function MapDisplayPanel({
 }) {
   return (
     <section
-      className="grid gap-2.5 border-b border-[#d5dbe3] pb-3"
+      className="grid gap-2.5 border-b border-line pb-3"
       aria-labelledby="map-display-title"
     >
       <PanelHeader headingId="map-display-title" title="Map Display" />

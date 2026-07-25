@@ -25,12 +25,12 @@ export function PowerBlocPanel({
       <ul className="mt-2.5 grid max-h-[32vh] list-none gap-1.5 overflow-y-auto p-0">
         {Object.entries(powerBlocs).map(([blocId, bloc]) => (
           <li
-            className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1.5 border border-[#d5dbe3] p-1.5"
+            className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1.5 border border-line p-1.5"
             key={blocId}
           >
             <span className="grid min-w-0">
               <strong>{bloc.name}</strong>
-              <small className="truncate text-[#667085]">
+              <small className="truncate text-muted">
                 {countries[bloc.leaderCountryId]?.name ?? bloc.leaderCountryId}
               </small>
             </span>

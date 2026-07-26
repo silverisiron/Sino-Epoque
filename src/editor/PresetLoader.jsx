@@ -20,7 +20,7 @@ export function PresetLoader({
           ))}
         </select>
       </label>
-      <button type="button" className="mt-2.5 w-full" onClick={onLoadPreset}>
+      <button type="button" className="w-full" onClick={onLoadPreset}>
         프리셋 불러오기
       </button>
     </section>

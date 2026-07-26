@@ -1,5 +1,4 @@
 import { useId, useRef, useState } from 'react'
-import styles from '../admin/AdminMapEditorPage.module.css'
 import { ChoiceInput } from './ChoiceInput'
 
 export function MapToolbar({
@@ -40,7 +39,7 @@ export function MapToolbar({
 
   return (
     <ul
-      className={`${styles.mapToolbar} m-0 flex list-none flex-row gap-1.5 border border-line-strong bg-white p-1.5 [&>li]:flex [&>li]:gap-1`}
+      className="absolute bottom-4 left-1/2 z-5 flex -translate-x-1/2 list-none flex-row gap-1.5 bg-white [&>li]:flex [&>li]:gap-1"
       role="toolbar"
       aria-label="지도 도구"
     >
@@ -66,13 +65,13 @@ export function MapToolbar({
           ▽
         </button>
         <div
-          className={`${styles.toolbarMenuContent} grid w-max max-w-70 gap-1.5 border border-line-strong bg-white p-1.5`}
+          className="absolute bottom-0 left-[calc(100%+6px)] z-100 grid w-max max-w-70 gap-1.5 bg-white"
           hidden={!isPaintSettingsOpen}
           id={paintSettingsId}
           role="dialog"
           aria-label="그리기 설정"
         >
-          <fieldset className="m-0 flex gap-1.5 *:flex-1">
+          <fieldset className="flex gap-1.5 *:flex-1">
             <legend className="sr-only">페인트 모드</legend>
             <ChoiceInput
               checked={paintMode === 'single'}
@@ -92,7 +91,7 @@ export function MapToolbar({
             </ChoiceInput>
           </fieldset>
 
-          <fieldset className="m-0 flex gap-1.5 *:flex-1">
+          <fieldset className="flex gap-1.5 *:flex-1">
             <legend className="sr-only">색칠 단위</legend>
             <ChoiceInput
               checked={paintUnit === 'province'}

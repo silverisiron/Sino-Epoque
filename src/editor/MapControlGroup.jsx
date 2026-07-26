@@ -1,12 +1,9 @@
-import styles from '../admin/AdminMapEditorPage.module.css'
-
 export function MapControlGroup({ children, label, position }) {
-  const positionClassName =
-    position === 'left' ? styles.mapControlGroupLeft : styles.mapControlGroupRight
+  const positionClassName = position === 'left' ? 'left-4' : 'right-4'
 
   return (
     <div
-      className={`${styles.mapControlGroup} ${positionClassName} m-0 grid gap-1 border border-line-strong bg-white p-1.5 [&>button]:min-h-7 [&>button]:w-8 [&>button]:text-lg [&>button]:leading-none`}
+      className={`fixed bottom-4 z-20 ${positionClassName} grid gap-1 bg-white [&>button]:min-h-7 [&>button]:w-8 [&>button]:text-lg [&>button]:leading-none`}
       role="toolbar"
       aria-label={label}
     >

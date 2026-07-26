@@ -10,8 +10,12 @@ export function PanelCollapseButton({
 }) {
   const isLeftPanel = side === 'left'
   const positionClassName = isLeftPanel
-    ? 'left-[var(--left-panel-width)] border-l-0'
-    : 'right-[var(--right-panel-width)] border-r-0'
+    ? expanded
+      ? 'left-(--spacing-editor-sidebar)'
+      : 'left-0'
+    : expanded
+      ? 'right-(--spacing-editor-sidebar)'
+      : 'right-0'
   const CollapseIcon = isLeftPanel ? ChevronLeft : ChevronRight
   const ExpandIcon = isLeftPanel ? ChevronRight : ChevronLeft
   const Icon = expanded ? CollapseIcon : ExpandIcon
@@ -20,7 +24,7 @@ export function PanelCollapseButton({
   return (
     <button
       type="button"
-      className={`pointer-events-auto bg-white rounded-l-lg absolute top-(--panel-toggle-top) z-20 grid h-12 w-6 min-h-0 -translate-y-1/2 place-items-center p-0! max-editor:hidden ${positionClassName}`}
+      className={`pointer-events-auto absolute top-[calc(50%_+_((var(--spacing-editor-header)_-_var(--spacing-map-scrollbar-clearance))_/_2))] z-20 grid h-12 w-6 min-h-0 -translate-y-1/2 place-items-center rounded-l-lg bg-white p-0! max-editor:hidden ${positionClassName}`}
       aria-controls={controls}
       aria-expanded={expanded}
       aria-label={`${label} ${action}`}

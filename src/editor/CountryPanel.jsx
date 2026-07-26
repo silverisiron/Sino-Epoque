@@ -35,7 +35,7 @@ function CountryRow({
 
   return (
     <li
-      className="grid cursor-pointer grid-cols-[14px_30px_minmax(0,1fr)_auto] items-center gap-2 border border-line p-1.5 data-[active=true]:border-ink data-[dragging=true]:opacity-50"
+      className="grid cursor-pointer grid-cols-[14px_30px_minmax(0,1fr)_auto] items-center gap-2 p-1.5 data-[dragging=true]:opacity-50"
       data-active={activeCountryId === countryId}
       data-dragging={draggedCountryId === countryId}
       onDragOver={(event) => event.preventDefault()}
@@ -44,7 +44,7 @@ function CountryRow({
     >
       <button
         type="button"
-        className="w-3.5 min-w-3.5 cursor-grab self-stretch min-h-0! border-0! p-0! active:cursor-grabbing"
+        className="w-3.5 min-w-3.5 cursor-grab self-stretch min-h-0! p-0! active:cursor-grabbing"
         draggable
         aria-label={`${country.name} 순서 변경`}
         title="드래그하여 순서 변경"
@@ -57,7 +57,7 @@ function CountryRow({
       <div className="relative h-7 w-7">
         <button
           type="button"
-          className="h-7 w-7 min-h-7! border border-ink"
+          className="h-7 w-7 min-h-7!"
           style={{ backgroundColor: country.color }}
           aria-label={`${country.name} 선택`}
           onClick={openColorPicker}
@@ -217,7 +217,7 @@ export function CountryPanel({
     <section aria-labelledby="countries-title">
       <PanelHeader headingId="countries-title" onAction={onAddCountry} title="국가 설정" />
 
-      <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] gap-1.5 [&>input]:min-w-0">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-1.5 [&>input]:min-w-0">
         <input
           aria-label="국가 검색"
           placeholder="국가 검색"
@@ -239,7 +239,7 @@ export function CountryPanel({
         </button>
       </div>
 
-      <ul className="my-3 grid max-h-[40vh] list-none gap-2 overflow-y-auto overscroll-contain p-0">
+      <ul className="grid max-h-[40vh] list-none gap-2 overflow-y-auto overscroll-contain">
         {visibleCountryIds.map((countryId) => {
           const country = countries[countryId]
 
@@ -266,7 +266,7 @@ export function CountryPanel({
           )
         })}
         {visibleCountryIds.length === 0 ? (
-          <li className="px-1.5 py-3 text-center text-muted">
+          <li className="text-center text-muted">
             검색 결과가 없습니다.
           </li>
         ) : null}
@@ -274,7 +274,7 @@ export function CountryPanel({
 
       <button
         type="button"
-        className="mt-2.5 w-full"
+        className="w-full"
         onClick={() => downloadJson('map-preset.json', preset)}
       >
         JSON으로 프리셋 저장하기

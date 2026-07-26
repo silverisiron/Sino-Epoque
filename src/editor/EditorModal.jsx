@@ -51,19 +51,19 @@ export function EditorModal({
       onMouseDown={onClose}
     >
       <section
-        className="max-h-[calc(100vh-24px)] w-full max-w-130 overflow-y-auto border border-line-strong bg-white"
+        className="max-h-[calc(100vh-24px)] w-full max-w-130 overflow-y-auto bg-white"
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <form
-          className="grid gap-3.5 p-4 [&_output]:min-h-8 [&_output]:border [&_output]:border-line [&_output]:px-2 [&_output]:py-1.5"
+          className="grid gap-3.5 [&_output]:min-h-8"
           onChange={() => setIsSaved(false)}
           onSubmit={handleSubmit}
           ref={formRef}
         >
-          <header className="flex items-center justify-between gap-2 border-b border-line pb-3">
+          <header className="flex items-center justify-between gap-2">
             <h2 id={labelledBy}>{title}</h2>
             <div className="flex items-center justify-between gap-2">
               <button type="submit" disabled={applyDisabled}>

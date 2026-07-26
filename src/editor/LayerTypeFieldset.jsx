@@ -30,10 +30,10 @@ export function LayerTypeFieldset({
   )
 
   return (
-    <fieldset className="m-0 min-w-0 border border-line p-2.5">
-      <legend className="px-1 text-sm font-semibold">{legend}</legend>
+    <fieldset className="min-w-0">
+      <legend className="text-sm font-semibold">{legend}</legend>
       {onOpacityChangeAll && availableTypes.length > 0 ? (
-        <label className="mb-2.5 grid grid-cols-[minmax(0,1fr)_auto] items-center border-b border-line pb-2.5 [&>input]:w-full [&>output]:min-w-12 [&>output]:text-right [&>span]:col-span-full">
+        <label className="grid grid-cols-[minmax(0,1fr)_auto] items-center [&>input]:w-full [&>output]:min-w-12 [&>output]:text-right [&>span]:col-span-full">
           <span>전체 불투명도{hasMixedOpacities ? ' (현재 평균)' : ''}</span>
           <input
             type="range"
@@ -58,7 +58,7 @@ export function LayerTypeFieldset({
             (typeof defaultOpacity === 'function' ? defaultOpacity(type) : defaultOpacity)
 
           return (
-            <div className="border-b border-divider px-0.5 py-1.5" key={typeId}>
+            <div key={typeId}>
               <label className="grid grid-cols-[20px_minmax(0,1fr)_minmax(0,1fr)_28px] items-center">
                 <input
                   className="min-h-0!"
@@ -73,9 +73,9 @@ export function LayerTypeFieldset({
                 {valueKey ? <strong className="text-right">{type[valueKey]}</strong> : null}
               </label>
               {onOpacityChange ? (
-                <details className="mt-1.5 ml-5">
+                <details>
                   <summary className="cursor-pointer text-[13px]">불투명도 {opacity}%</summary>
-                  <label className="mt-1.5 grid grid-cols-[minmax(0,1fr)_auto] items-center [&>input]:w-full [&>output]:min-w-12 [&>output]:text-right [&>span]:col-span-full">
+                  <label className="grid grid-cols-[minmax(0,1fr)_auto] items-center [&>input]:w-full [&>output]:min-w-12 [&>output]:text-right [&>span]:col-span-full">
                     <input
                       type="range"
                       min="0"

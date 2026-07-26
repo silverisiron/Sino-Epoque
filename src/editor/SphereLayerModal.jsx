@@ -113,7 +113,7 @@ export function SphereLayerModal({
       onClose={onClose}
       title="레이어 설정"
     >
-      <fieldset className="m-0 flex min-w-0 gap-1.5 *:flex-1">
+      <fieldset className="flex min-w-0 gap-1.5 *:flex-1">
         <legend className="sr-only">지도 레이어 종류</legend>
         {LAYER_MODES.map(([layerMode, label]) => (
           <ChoiceInput

@@ -29,7 +29,7 @@ export function ProvinceInfo({ isEditor, onRemoveAssignment, selectedCountry, se
         <p>프로빈스를 클릭하세요.</p>
       )}
       {isEditor ? (
-        <button type="button" className="mt-2.5 w-full" onClick={onRemoveAssignment}>
+        <button type="button" className="w-full" onClick={onRemoveAssignment}>
           프로빈스 선택 해제
         </button>
       ) : null}

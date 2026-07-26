@@ -22,10 +22,10 @@ export function PowerBlocPanel({
       headingId="power-blocs-title"
       onAdd={() => setIsAdding(true)}
     >
-      <ul className="mt-2.5 grid max-h-[32vh] list-none gap-1.5 overflow-y-auto p-0">
+      <ul className="grid max-h-[32vh] list-none gap-1.5 overflow-y-auto">
         {Object.entries(powerBlocs).map(([blocId, bloc]) => (
           <li
-            className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1.5 border border-line p-1.5"
+            className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1.5"
             key={blocId}
           >
             <span className="grid min-w-0">

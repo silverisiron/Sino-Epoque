@@ -95,8 +95,8 @@ export function PowerBlocEditModal({
         </select>
       </label>
 
-      <fieldset className="m-0 min-w-0 border border-line p-2.5">
-        <legend className="px-1 text-sm font-semibold">회원국</legend>
+      <fieldset className="min-w-0">
+        <legend className="text-sm font-semibold">회원국</legend>
         <div className="grid max-h-[36vh] gap-1 overflow-y-auto">
           {countryOrder
             .filter((countryId) => countryId !== draft.leaderCountryId)
@@ -106,7 +106,7 @@ export function PowerBlocEditModal({
 
               return (
                 <label
-                  className="grid grid-cols-[20px_minmax(0,1fr)_auto] items-center border-b border-divider px-0.5 py-1.25"
+                  className="grid grid-cols-[20px_minmax(0,1fr)_auto] items-center"
                   key={countryId}
                 >
                   <input

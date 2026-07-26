@@ -1,4 +1,3 @@
-import styles from '../admin/AdminMapEditorPage.module.css'
 import { MapControlGroup } from './MapControlGroup'
 import { MapToolbar } from './MapToolbar'
 
@@ -29,18 +28,18 @@ export function MapCanvas({
 }) {
   return (
     <section
-      className={`${styles.mapPanel} map-editor-canvas border border-line bg-white`}
+      className="relative min-h-0 min-w-0 bg-white editor:col-start-1 editor:row-start-2 editor:row-end-4"
       aria-label="지도 캔버스"
     >
       <div
-        className={`${styles.mapScroll} bg-canvas max-editor:max-h-[60vh]`}
+        className="relative size-full overflow-auto bg-canvas max-editor:max-h-[60vh]"
         ref={mapScrollRef}
       >
-        <div className={styles.mapStage}>
-          <div className={styles.canvasStack} style={canvasStyle}>
+        <div className="grid min-h-full min-w-full place-items-center">
+          <div className="relative min-h-px min-w-px" style={canvasStyle}>
             <canvas
               ref={baseCanvasRef}
-              className={styles.provinceMap}
+              className="absolute inset-0 block size-full cursor-crosshair touch-none [image-rendering:pixelated] data-[tool=hand]:cursor-grab data-[tool=hand]:active:cursor-grabbing"
               data-tool={activeTool}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
@@ -48,11 +47,19 @@ export function MapCanvas({
               onPointerCancel={onPointerUp}
               aria-label="프로빈스 백지도"
             />
-            <canvas ref={overlayCanvasRef} className={styles.provinceOverlay} aria-hidden="true" />
-            <canvas ref={sphereCanvasRef} className={styles.sphereOverlay} aria-hidden="true" />
+            <canvas
+              ref={overlayCanvasRef}
+              className="pointer-events-none absolute inset-0 z-1 block size-full [image-rendering:pixelated]"
+              aria-hidden="true"
+            />
+            <canvas
+              ref={sphereCanvasRef}
+              className="pointer-events-none absolute inset-0 z-2 block size-full [image-rendering:pixelated]"
+              aria-hidden="true"
+            />
             {rasterLayers.heightmap ? (
               <img
-                className={`${styles.mapRasterLayer} ${styles.heightmapLayer}`}
+                className="pointer-events-none absolute inset-0 z-3lock size-full object-fill opacity-35 mix-blend-multiply [image-rendering:pixelated]"
                 src="/maps/base/bmp/heightmap.bmp"
                 width="5632"
                 height="2048"
@@ -63,7 +70,7 @@ export function MapCanvas({
             ) : null}
             {rasterLayers.rivers ? (
               <img
-                className={`${styles.mapRasterLayer} ${styles.riversLayer}`}
+                className="pointer-events-none absolute inset-0 z-4 block size-full object-fill mix-blend-multiply [image-rendering:pixelated]"
                 src="/maps/base/bmp/rivers.bmp"
                 width="5632"
                 height="2048"
@@ -72,17 +79,24 @@ export function MapCanvas({
                 draggable="false"
               />
             ) : null}
-            <canvas ref={borderCanvasRef} className={styles.provinceBorder} aria-hidden="true" />
+            <canvas
+              ref={borderCanvasRef}
+              className="pointer-events-none absolute inset-0 z-5 block size-full [image-rendering:pixelated]"
+              aria-hidden="true"
+            />
           </div>
         </div>
         {isMapRendering ? (
-          <div className={styles.mapLoading}>
+          <div className="pointer-events-none absolute inset-0 z-6 grid place-items-center">
             <div
-              className="flex items-center gap-2.5 border border-line-strong bg-white px-3.5 py-2.5 text-sm font-semibold"
+              className="flex items-center gap-2.5 bg-white text-sm font-semibold"
               role="status"
               aria-live="polite"
             >
-              <span className={styles.throbber} aria-hidden="true" />
+              <span
+                className="size-4.5 animate-[spin_0.8s_linear_infinite] rounded-full border-[3px] border-line border-t-ink"
+                aria-hidden="true"
+              />
               <span>로딩중...</span>
             </div>
           </div>

@@ -90,18 +90,20 @@ export function AdminMapEditorPage() {
       data-left-panel-expanded={isLeftPanelExpanded}
       data-right-panel-expanded={isRightPanelExpanded}
     >
-      <header className="col-span-full flex items-center justify-between px-3 py-1">
-        <div className="opacity-100">
-          <h1 className="sr-only">Province Map Tool</h1>
-          <p>{mapData.status}</p>
-        </div>
-        <nav className="flex min-h-8 items-center justify-between gap-3" aria-label="페이지">
-          <button type="button" aria-pressed={page === 'editor'} onClick={() => setPage('editor')}>
+      <header className="col-span-full flex items-center px-3 py-1">
+        <nav className="flex min-h-8 items-center gap-3 justify-between w-full">
+          <div>
+            <h1 className="sr-only">Province Map Tool</h1>
+            <p>{mapData.status}</p>
+          </div>
+          <ul className="flex gap-3 col">
+            <li><button type="button" aria-pressed={page === 'editor'} onClick={() => setPage('editor')}>
             지도 편집기
-          </button>
-          <button type="button" aria-pressed={page === 'loader'} onClick={() => setPage('loader')}>
+          </button></li>
+            <li><button type="button" aria-pressed={page === 'loader'} onClick={() => setPage('loader')}>
             프리셋 불러오기
-          </button>
+          </button></li>
+          </ul>
         </nav>
       </header>
 
@@ -109,36 +111,37 @@ export function AdminMapEditorPage() {
         className="map-editor-panel"
         data-side="left"
         data-expanded={isLeftPanelExpanded}
-        id="data-tools-panel"
         aria-label="데이터 도구"
       >
-        {page === 'editor' ? (
-          <DataManagerPanel
-            autonomyTypes={editor.autonomyTypes}
-            countries={editor.countries}
-            countryOrder={editor.countryOrder}
-            onAddAutonomyType={editor.addAutonomyType}
-            onAddPowerBloc={editor.addPowerBloc}
-            onAddPowerRankType={editor.addPowerRankType}
-            onAutonomyTypeDelete={editor.deleteAutonomyType}
-            onAutonomyTypeUpdate={editor.updateAutonomyType}
-            onPowerBlocDelete={editor.deletePowerBloc}
-            onPowerBlocUpdate={editor.updatePowerBloc}
-            onPowerRankTypeDelete={editor.deletePowerRankType}
-            onPowerRankTypeUpdate={editor.updatePowerRankType}
-            powerBlocs={editor.powerBlocs}
-            powerRankTypes={editor.powerRankTypes}
-          />
-        ) : null}
-      </section>
+        <div className="map-editor-panel-content" id="data-tools-panel">
+          {page === 'editor' ? (
+            <DataManagerPanel
+              autonomyTypes={editor.autonomyTypes}
+              countries={editor.countries}
+              countryOrder={editor.countryOrder}
+              onAddAutonomyType={editor.addAutonomyType}
+              onAddPowerBloc={editor.addPowerBloc}
+              onAddPowerRankType={editor.addPowerRankType}
+              onAutonomyTypeDelete={editor.deleteAutonomyType}
+              onAutonomyTypeUpdate={editor.updateAutonomyType}
+              onPowerBlocDelete={editor.deletePowerBloc}
+              onPowerBlocUpdate={editor.updatePowerBloc}
+              onPowerRankTypeDelete={editor.deletePowerRankType}
+              onPowerRankTypeUpdate={editor.updatePowerRankType}
+              powerBlocs={editor.powerBlocs}
+              powerRankTypes={editor.powerRankTypes}
+            />
+          ) : null}
+        </div>
 
-      <PanelCollapseButton
-        controls="data-tools-panel"
-        expanded={isLeftPanelExpanded}
-        label="왼쪽 패널"
-        onToggle={() => setIsLeftPanelExpanded((isExpanded) => !isExpanded)}
-        side="left"
-      />
+        <PanelCollapseButton
+          controls="data-tools-panel"
+          expanded={isLeftPanelExpanded}
+          label="왼쪽 패널"
+          onToggle={() => setIsLeftPanelExpanded((isExpanded) => !isExpanded)}
+          side="left"
+        />
+      </section>
 
       <MapCanvas
         activeTool={editor.activeTool}
@@ -170,58 +173,59 @@ export function AdminMapEditorPage() {
         className="map-editor-panel"
         data-side="right"
         data-expanded={isRightPanelExpanded}
-        id="country-map-panel"
         aria-label="국가 및 맵 정보"
       >
-        {page === 'editor' ? (
-          <>
-            <MapDisplayPanel
-              borderMode={borderMode}
-              onBorderModeChange={setBorderMode}
-              onOpenSphereLayer={() => setIsSphereLayerModalOpen(true)}
-              onRasterLayerChange={handleRasterLayerChange}
-              rasterLayers={rasterLayers}
-              sphereLayerActive={sphereLayerActive}
+        <div className="map-editor-panel-content" id="country-map-panel">
+          {page === 'editor' ? (
+            <>
+              <MapDisplayPanel
+                borderMode={borderMode}
+                onBorderModeChange={setBorderMode}
+                onOpenSphereLayer={() => setIsSphereLayerModalOpen(true)}
+                onRasterLayerChange={handleRasterLayerChange}
+                rasterLayers={rasterLayers}
+                sphereLayerActive={sphereLayerActive}
+              />
+              <CountryPanel
+                activeCountryId={editor.activeCountryId}
+                autonomyTypes={editor.autonomyTypes}
+                countries={editor.countries}
+                countryOrder={editor.countryOrder}
+                onAddCountry={editor.addCountry}
+                onCountryOrderChange={editor.reorderCountries}
+                onCountryUpdate={editor.updateCountry}
+                onSelectCountry={editor.setActiveCountryId}
+                powerBlocs={editor.powerBlocs}
+                powerRankTypes={editor.powerRankTypes}
+                preset={editor.preset}
+              />
+            </>
+          ) : (
+            <PresetLoader
+              onLoadPreset={() => editor.loadPreset()}
+              onSelectedPresetPathChange={mapData.setSelectedPresetPath}
+              presetIndex={mapData.presetIndex}
+              selectedPresetPath={mapData.selectedPresetPath}
             />
-            <CountryPanel
-              activeCountryId={editor.activeCountryId}
-              autonomyTypes={editor.autonomyTypes}
-              countries={editor.countries}
-              countryOrder={editor.countryOrder}
-              onAddCountry={editor.addCountry}
-              onCountryOrderChange={editor.reorderCountries}
-              onCountryUpdate={editor.updateCountry}
-              onSelectCountry={editor.setActiveCountryId}
-              powerBlocs={editor.powerBlocs}
-              powerRankTypes={editor.powerRankTypes}
-              preset={editor.preset}
-            />
-          </>
-        ) : (
-          <PresetLoader
-            onLoadPreset={() => editor.loadPreset()}
-            onSelectedPresetPathChange={mapData.setSelectedPresetPath}
-            presetIndex={mapData.presetIndex}
-            selectedPresetPath={mapData.selectedPresetPath}
-          />
-        )}
+          )}
 
-        <ProvinceInfo
-          isEditor={page === 'editor'}
-          onRemoveAssignment={editor.removeAssignment}
-          selectedCountry={editor.selectedCountry}
-          selectedProvince={editor.selectedProvince}
-          selectedState={editor.selectedState}
+          <ProvinceInfo
+            isEditor={page === 'editor'}
+            onRemoveAssignment={editor.removeAssignment}
+            selectedCountry={editor.selectedCountry}
+            selectedProvince={editor.selectedProvince}
+            selectedState={editor.selectedState}
+          />
+        </div>
+
+        <PanelCollapseButton
+          controls="country-map-panel"
+          expanded={isRightPanelExpanded}
+          label="오른쪽 패널"
+          onToggle={() => setIsRightPanelExpanded((isExpanded) => !isExpanded)}
+          side="right"
         />
       </section>
-
-      <PanelCollapseButton
-        controls="country-map-panel"
-        expanded={isRightPanelExpanded}
-        label="오른쪽 패널"
-        onToggle={() => setIsRightPanelExpanded((isExpanded) => !isExpanded)}
-        side="right"
-      />
 
       {isSphereLayerModalOpen ? (
         <SphereLayerModal

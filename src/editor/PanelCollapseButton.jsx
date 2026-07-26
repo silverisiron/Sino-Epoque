@@ -20,7 +20,7 @@ export function PanelCollapseButton({
   return (
     <button
       type="button"
-      className={`absolute top-[var(--panel-toggle-top)] z-20 grid h-12 w-6 min-h-0! -translate-y-1/2 place-items-center p-0! transition-[left,right] duration-300 ease-in-out motion-reduce:transition-none max-editor:hidden ${positionClassName}`}
+      className={`pointer-events-auto bg-white rounded-l-lg absolute top-(--panel-toggle-top) z-20 grid h-12 w-6 min-h-0 -translate-y-1/2 place-items-center p-0! max-editor:hidden ${positionClassName}`}
       aria-controls={controls}
       aria-expanded={expanded}
       aria-label={`${label} ${action}`}

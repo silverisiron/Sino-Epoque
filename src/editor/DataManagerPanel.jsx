@@ -1,5 +1,4 @@
 import { NumericTypePanel } from './NumericTypePanel'
-import { PanelHeader } from './PanelHeader'
 import { PowerBlocPanel } from './PowerBlocPanel'
 
 export function DataManagerPanel({
@@ -19,10 +18,10 @@ export function DataManagerPanel({
   powerRankTypes,
 }) {
   return (
-    <section aria-labelledby="data-managers-title">
-      <PanelHeader headingId="data-managers-title" title="설정" />
+    <>
       <NumericTypePanel
         heading="Autonomy Types"
+        headingId="autonomy-types-title"
         isInUse={(typeId) =>
           Object.keys(autonomyTypes).length <= 1 ||
           Object.values(countries).some((country) => country.autonomyTypeId === typeId)
@@ -30,7 +29,6 @@ export function DataManagerPanel({
         onAdd={onAddAutonomyType}
         onDelete={onAutonomyTypeDelete}
         onUpdate={onAutonomyTypeUpdate}
-        summary="자치도 유형 관리"
         types={autonomyTypes}
         valueKey="autonomy"
         valueLabel="자치도 유형"
@@ -38,6 +36,7 @@ export function DataManagerPanel({
 
       <NumericTypePanel
         heading="Power Ranks"
+        headingId="power-ranks-title"
         isInUse={(typeId) =>
           Object.keys(powerRankTypes).length <= 1 ||
           Object.values(countries).some((country) => country.powerRankTypeId === typeId)
@@ -45,7 +44,6 @@ export function DataManagerPanel({
         onAdd={onAddPowerRankType}
         onDelete={onPowerRankTypeDelete}
         onUpdate={onPowerRankTypeUpdate}
-        summary="국가 등급 관리"
         types={powerRankTypes}
         valueKey="level"
         valueLabel="국가 등급"
@@ -61,6 +59,6 @@ export function DataManagerPanel({
         powerBlocs={powerBlocs}
         powerRankTypes={powerRankTypes}
       />
-    </section>
+    </>
   )
 }

@@ -19,8 +19,8 @@ export function PowerBlocPanel({
   return (
     <DataManager
       heading="Power Blocs"
+      headingId="power-blocs-title"
       onAdd={() => setIsAdding(true)}
-      summary="세력 블록 관리"
     >
       <ul className="mt-2.5 grid max-h-[32vh] list-none gap-1.5 overflow-y-auto p-0">
         {Object.entries(powerBlocs).map(([blocId, bloc]) => (

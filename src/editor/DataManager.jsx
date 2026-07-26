@@ -1,11 +1,17 @@
 import { PanelHeader } from './PanelHeader'
 
-export function DataManager({ addLabel = '추가', children, heading, onAdd, summary }) {
+export function DataManager({ addLabel = '추가', children, heading, headingId, onAdd }) {
   return (
-    <details className="mt-3 border-t border-line pt-3 open:[&>summary]:mb-3">
-      <summary className="cursor-pointer text-sm font-semibold">{summary}</summary>
-      <PanelHeader actionLabel={addLabel} onAction={onAdd} title={heading} />
+    <section
+      aria-labelledby={headingId}
+    >
+      <PanelHeader
+        actionLabel={addLabel}
+        headingId={headingId}
+        onAction={onAdd}
+        title={heading}
+      />
       {children}
-    </details>
+    </section>
   )
 }

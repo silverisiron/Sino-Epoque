@@ -215,7 +215,7 @@ export function CountryPanel({
 
   return (
     <section aria-labelledby="countries-title">
-      <PanelHeader headingId="countries-title" onAction={onAddCountry} title="Countries" />
+      <PanelHeader headingId="countries-title" onAction={onAddCountry} title="국가 설정" />
 
       <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] gap-1.5 [&>input]:min-w-0">
         <input

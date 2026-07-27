@@ -1,3 +1,5 @@
+import { PanelSection } from './PanelSection'
+
 export function PresetLoader({
   onLoadPreset,
   onSelectedPresetPathChange,
@@ -5,8 +7,7 @@ export function PresetLoader({
   selectedPresetPath,
 }) {
   return (
-    <section aria-labelledby="presets-title">
-      <h2 id="presets-title">프리셋</h2>
+    <PanelSection headingId="presets-title" title="프리셋">
       <label>
         프리셋 파일
         <select
@@ -23,6 +24,6 @@ export function PresetLoader({
       <button type="button" className="w-full" onClick={onLoadPreset}>
         프리셋 불러오기
       </button>
-    </section>
+    </PanelSection>
   )
 }

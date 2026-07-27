@@ -1,7 +1,8 @@
+import { PanelSection } from './PanelSection'
+
 export function ProvinceInfo({ isEditor, onRemoveAssignment, selectedCountry, selectedProvince, selectedState }) {
   return (
-    <section aria-labelledby="province-title">
-      <h2 id="province-title">프로빈스</h2>
+    <PanelSection headingId="province-title" title="프로빈스">
       {selectedProvince?.province ? (
         <dl className="grid gap-1.5">
           <div>
@@ -33,6 +34,6 @@ export function ProvinceInfo({ isEditor, onRemoveAssignment, selectedCountry, se
           프로빈스 선택 해제
         </button>
       ) : null}
-    </section>
+    </PanelSection>
   )
 }

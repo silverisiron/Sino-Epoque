@@ -3,7 +3,7 @@ export function MapControlGroup({ children, label, position }) {
 
   return (
     <div
-      className={`fixed bottom-4 z-20 ${positionClassName} grid gap-1 bg-white [&>button]:min-h-7 [&>button]:w-8 [&>button]:text-lg [&>button]:leading-none`}
+      className={`fixed bottom-4 z-20 ${positionClassName} grid gap-1 [&>button]:min-h-7 [&>button]:w-8 [&>button]:text-lg [&>button]:leading-none`}
       role="toolbar"
       aria-label={label}
     >

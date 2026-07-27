@@ -1,6 +1,6 @@
 import { ChoiceInput } from './ChoiceInput'
 import { MapDisplayControlGroup } from './MapDisplayControlGroup'
-import { PanelHeader } from './PanelHeader'
+import { PanelSection } from './PanelSection'
 
 export function MapDisplayPanel({
   borderMode,
@@ -11,12 +11,11 @@ export function MapDisplayPanel({
   sphereLayerActive,
 }) {
   return (
-    <section
+    <PanelSection
       className="grid gap-2.5"
-      aria-labelledby="map-display-title"
+      headingId="map-display-title"
+      title="지도 레이어 설정"
     >
-      <PanelHeader headingId="map-display-title" title="지도 레이어 설정" />
-
       <MapDisplayControlGroup legend="경계선 표시">
         <ChoiceInput
           checked={borderMode === 'province'}
@@ -73,6 +72,6 @@ export function MapDisplayPanel({
       >
         국가 레이어 설정
       </button>
-    </section>
+    </PanelSection>
   )
 }

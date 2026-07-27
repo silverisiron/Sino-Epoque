@@ -28,11 +28,11 @@ export function MapCanvas({
 }) {
   return (
     <section
-      className="relative min-h-0 min-w-0 bg-white editor:col-start-1 editor:row-start-2 editor:row-end-4"
+      className="relative min-h-0 min-w-0 bg-white min-[56.25rem]:col-start-1 min-[56.25rem]:row-start-2 min-[56.25rem]:row-end-4"
       aria-label="지도 캔버스"
     >
       <div
-        className="relative size-full overflow-auto bg-canvas max-editor:max-h-[60vh]"
+        className="relative size-full overflow-auto bg-canvas max-[56.25rem]:max-h-[60vh]"
         ref={mapScrollRef}
       >
         <div className="grid min-h-full min-w-full place-items-center">

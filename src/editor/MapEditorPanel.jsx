@@ -2,10 +2,10 @@ import { useId } from 'react'
 import { PanelCollapseButton } from './PanelCollapseButton'
 
 const PANEL_LAYOUT_CLASS_NAME =
-  'pointer-events-none grid min-h-0 min-w-0 editor:col-start-1 editor:row-start-2 editor:z-10 editor:w-(--spacing-editor-sidebar)'
+  'pointer-events-none grid min-h-0 min-w-0 min-[56.25rem]:col-start-1 min-[56.25rem]:row-start-2 min-[56.25rem]:z-10 min-[56.25rem]:w-80'
 
 const CONTENT_LAYOUT_CLASS_NAME =
-  'pointer-events-auto grid min-h-0 min-w-0 content-start editor:overflow-y-auto'
+  'pointer-events-auto grid gap-3 min-h-0 min-w-0 content-start min-[56.25rem]:overflow-y-auto'
 
 export function MapEditorPanel({
   children,
@@ -18,9 +18,9 @@ export function MapEditorPanel({
   const isLeftPanel = side === 'left'
   const toggleLabel = isLeftPanel ? '왼쪽 패널' : '오른쪽 패널'
   const panelSideClassName = isLeftPanel
-    ? 'editor:justify-self-start'
-    : 'editor:justify-self-end'
-  const contentStateClassName = expanded ? '' : 'editor:hidden'
+    ? 'min-[56.25rem]:justify-self-start'
+    : 'min-[56.25rem]:justify-self-end'
+  const contentStateClassName = expanded ? '' : 'min-[56.25rem]:hidden'
 
   return (
     <section

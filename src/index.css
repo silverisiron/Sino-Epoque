@@ -8,11 +8,6 @@
   --color-divider: #e6e9ee;
   --color-canvas: #e6ebf1;
   --color-danger: #b42318;
-
-  --spacing-editor-header: 2.5rem;
-  --spacing-map-scrollbar-clearance: 1.25rem;
-  --spacing-editor-sidebar: 20rem;
-  --breakpoint-editor: 56.25rem;
 }
 
 @layer base {
@@ -25,4 +20,26 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }

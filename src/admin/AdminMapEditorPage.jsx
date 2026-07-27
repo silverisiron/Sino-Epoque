@@ -86,7 +86,7 @@ export function AdminMapEditorPage() {
 
   return (
     <main
-      className="relative grid h-screen grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] max-editor:h-auto max-editor:min-h-screen editor:min-w-0 editor:max-w-full editor:grid-rows-[auto_minmax(0,1fr)_var(--spacing-map-scrollbar-clearance)] editor:overflow-hidden"
+      className="relative grid h-screen grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] max-[56.25rem]:h-auto max-[56.25rem]:min-h-screen min-[56.25rem]:min-w-0 min-[56.25rem]:max-w-full min-[56.25rem]:grid-rows-[auto_minmax(0,1fr)_1.25rem] min-[56.25rem]:overflow-hidden"
     >
       <header className="col-span-full flex items-center py-1">
         <nav className="flex min-h-8 items-center gap-3 justify-between w-full">

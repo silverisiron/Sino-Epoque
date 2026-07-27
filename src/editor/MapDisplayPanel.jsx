@@ -1,8 +1,10 @@
-import { ChoiceInput } from './ChoiceInput'
-import { MapDisplayControlGroup } from './MapDisplayControlGroup'
-import { PanelSection } from './PanelSection'
+import { cn } from "../lib/utils";
+import { ChoiceInput } from './ChoiceInput';
+import { MapDisplayControlGroup } from './MapDisplayControlGroup';
+import { PanelSection } from './PanelSection';
 
 export function MapDisplayPanel({
+  className,
   borderMode,
   onBorderModeChange,
   onOpenSphereLayer,
@@ -12,7 +14,7 @@ export function MapDisplayPanel({
 }) {
   return (
     <PanelSection
-      className="grid gap-2.5"
+      className={cn("grid gap-2.5"), className}
       headingId="map-display-title"
       title="지도 레이어 설정"
     >

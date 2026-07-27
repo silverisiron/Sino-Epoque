@@ -3,7 +3,7 @@ import { PanelHeader } from './PanelHeader'
 export function PanelSection({
   actionLabel,
   children,
-  className = '',
+  className = 'bg-gray-700',
   headingId,
   onAction,
   title,

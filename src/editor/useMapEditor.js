@@ -1039,18 +1039,31 @@ export function useMapEditor({
   }
 
   function deletePowerBloc(blocId) {
-    if (!powerBlocs[blocId]) {
-      return false
+    return deletePowerBlocs([blocId]).length > 0
+  }
+
+  function deletePowerBlocs(blocIds) {
+    const selectedBlocIds = new Set(blocIds)
+    const deletableBlocIds = Object.keys(powerBlocs).filter((blocId) =>
+      selectedBlocIds.has(blocId),
+    )
+
+    if (deletableBlocIds.length === 0) {
+      return []
     }
 
     recordHistory()
     setPowerBlocs((currentPowerBlocs) => {
       const nextPowerBlocs = { ...currentPowerBlocs }
-      delete nextPowerBlocs[blocId]
+
+      for (const blocId of deletableBlocIds) {
+        delete nextPowerBlocs[blocId]
+      }
+
       return nextPowerBlocs
     })
-    setStatus('세력 블록이 삭제되었습니다.')
-    return true
+    setStatus(`세력 블록 ${deletableBlocIds.length}개가 삭제되었습니다.`)
+    return deletableBlocIds
   }
 
   function removeAssignment() {
@@ -1166,6 +1179,7 @@ export function useMapEditor({
     deleteAutonomyTypes,
     deleteCountry,
     deletePowerBloc,
+    deletePowerBlocs,
     deletePowerRankType,
     deletePowerRankTypes,
     handlePointerDown,

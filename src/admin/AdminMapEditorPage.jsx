@@ -123,6 +123,7 @@ export function AdminMapEditorPage() {
             onAutonomyTypesDelete={editor.deleteAutonomyTypes}
             onAutonomyTypeUpdate={editor.updateAutonomyType}
             onPowerBlocDelete={editor.deletePowerBloc}
+            onPowerBlocsDelete={editor.deletePowerBlocs}
             onPowerBlocUpdate={editor.updatePowerBloc}
             onPowerRankTypeDelete={editor.deletePowerRankType}
             onPowerRankTypesDelete={editor.deletePowerRankTypes}

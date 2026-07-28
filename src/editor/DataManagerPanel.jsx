@@ -12,6 +12,7 @@ export function DataManagerPanel({
   onAutonomyTypesDelete,
   onAutonomyTypeUpdate,
   onPowerBlocDelete,
+  onPowerBlocsDelete,
   onPowerBlocUpdate,
   onPowerRankTypeDelete,
   onPowerRankTypesDelete,
@@ -59,6 +60,7 @@ export function DataManagerPanel({
         countryOrder={countryOrder}
         onAdd={onAddPowerBloc}
         onDelete={onPowerBlocDelete}
+        onDeleteSelected={onPowerBlocsDelete}
         onUpdate={onPowerBlocUpdate}
         powerBlocs={powerBlocs}
         powerRankTypes={powerRankTypes}

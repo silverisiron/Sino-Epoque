@@ -3,7 +3,7 @@ import { downloadJson } from '../map/mapData'
 import { createCountryBlocIndex, getTopIndependentCountryId } from '../map/worldRelations'
 import { CountryEditModal } from './CountryEditModal'
 import { CountryFilterModal } from './CountryFilterModal'
-import { PanelHeader } from './PanelHeader'
+import { PanelSection } from './PanelSection'
 
 const EMPTY_COUNTRY_FILTER = {
   independentCountryId: '',
@@ -214,9 +214,11 @@ export function CountryPanel({
   const editingCountry = editingCountryId ? countries[editingCountryId] : null
 
   return (
-    <section aria-labelledby="countries-title">
-      <PanelHeader headingId="countries-title" onAction={onAddCountry} title="국가 설정" />
-
+    <PanelSection
+      headingId="countries-title"
+      onAction={onAddCountry}
+      title="국가 설정"
+    >
       <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-1.5 [&>input]:min-w-0">
         <input
           aria-label="국가 검색"
@@ -239,7 +241,7 @@ export function CountryPanel({
         </button>
       </div>
 
-      <ul className="grid max-h-[40vh] list-none gap-2 overflow-y-auto overscroll-contain">
+      <ul className="scrollbar-custom grid max-h-[40vh] list-none gap-2 overflow-y-auto overscroll-none">
         {visibleCountryIds.map((countryId) => {
           const country = countries[countryId]
 
@@ -304,6 +306,6 @@ export function CountryPanel({
           settings={countryFilter}
         />
       ) : null}
-    </section>
+    </PanelSection>
   )
 }

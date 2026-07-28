@@ -51,7 +51,7 @@ export function EditorModal({
       onMouseDown={onClose}
     >
       <section
-        className="max-h-[calc(100vh-24px)] w-full max-w-130 overflow-y-auto bg-white"
+        className="scrollbar-custom max-h-[calc(100vh-24px)] w-full max-w-130 overflow-y-auto bg-white"
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}

@@ -8,7 +8,7 @@ export function ChoiceInput({
 }) {
   return (
     <label
-      className={`grid min-h-8 min-w-0 cursor-pointer place-items-center text-center text-sm focus-within:outline-2 focus-within:outline-offset-2 ${checked ? 'bg-ink text-white' : 'bg-white'}`}
+      className={`grid min-h-8 min-w-0 place-items-center text-center text-sm cursor-pointer`}
     >
       <input
         className="sr-only"

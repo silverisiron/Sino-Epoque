@@ -51,7 +51,7 @@ export function LayerTypeFieldset({
           <output>{averageOpacity}%</output>
         </label>
       ) : null}
-      <div className="grid max-h-[42vh] gap-1.5 overflow-y-auto">
+      <div className="scrollbar-custom grid max-h-[42vh] gap-1.5 overflow-y-auto">
         {availableTypes.map(([typeId, type]) => {
           const opacity =
             opacityByType?.[typeId] ??

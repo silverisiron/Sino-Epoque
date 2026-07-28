@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DataManager } from './DataManager'
+import { PanelSection } from './PanelSection'
 import { PowerBlocEditModal } from './PowerBlocEditModal'
 
 export function PowerBlocPanel({
@@ -17,12 +17,12 @@ export function PowerBlocPanel({
   const editingBloc = editingBlocId ? powerBlocs[editingBlocId] : null
 
   return (
-    <DataManager
-      heading="Power Blocs"
+    <PanelSection
       headingId="power-blocs-title"
-      onAdd={() => setIsAdding(true)}
+      onAction={() => setIsAdding(true)}
+      title="Power Blocs"
     >
-      <ul className="grid max-h-[32vh] list-none gap-1.5 overflow-y-auto">
+      <ul className="scrollbar-custom grid max-h-[32vh] list-none gap-1.5 overflow-y-auto">
         {Object.entries(powerBlocs).map(([blocId, bloc]) => (
           <li
             className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1.5"
@@ -69,6 +69,6 @@ export function PowerBlocPanel({
           powerRankTypes={powerRankTypes}
         />
       ) : null}
-    </DataManager>
+    </PanelSection>
   )
 }

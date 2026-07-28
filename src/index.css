@@ -1,28 +1,47 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 @import "tailwindcss";
 
-@theme {
-  --color-ink: #17202a;
-  --color-muted: #667085;
-  --color-line: #d5dbe3;
-  --color-line-strong: #aeb7c2;
-  --color-divider: #e6e9ee;
-  --color-canvas: #e6ebf1;
-  --color-danger: #b42318;
 
-  --spacing-editor-header: 2.5rem;
-  --spacing-map-scrollbar-clearance: 1.25rem;
-  --spacing-editor-sidebar: 20rem;
-  --breakpoint-editor: 56.25rem;
+@theme {
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  
+  --color-primary: #17181a;
+  --color-primary-hover: #1f2023;
+  --color-text-primary: #f9fafb;
+  --color-text-secondary: #a1a1aa;
+  --color-muted: #667085;
+  --color-bg-sub: #17181a;
 }
 
 @layer base {
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
+  input::placeholder, textarea::placeholder {
+    color: var(--color-text-secondary); 
+    opacity: 1; 
+  }
   }
 }
 
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@utility scrollbar-custom {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  &::-webkit-scrollbar {
+    width: 6px;
+  }&::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 9999px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
   }
 }

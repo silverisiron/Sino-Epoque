@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DataManager } from './DataManager'
+import { PanelSection } from './PanelSection'
 
 function NumericTypeRow({ inUse, onDelete, onUpdate, type, typeId, valueKey, valueLabel }) {
   const [draft, setDraft] = useState({ ...type })
@@ -67,8 +67,8 @@ export function NumericTypePanel({
   valueLabel,
 }) {
   return (
-    <DataManager heading={heading} headingId={headingId} onAdd={onAdd}>
-      <ul className="grid max-h-[32vh] list-none gap-1.5 overflow-y-auto">
+    <PanelSection headingId={headingId} onAction={onAdd} title={heading}>
+      <ul className="scrollbar-custom grid max-h-[32vh] list-none gap-1.5 overflow-y-auto">
         {Object.entries(types)
           .sort(([, left], [, right]) => right[valueKey] - left[valueKey])
           .map(([typeId, type]) => (
@@ -84,6 +84,6 @@ export function NumericTypePanel({
             />
           ))}
       </ul>
-    </DataManager>
+    </PanelSection>
   )
 }

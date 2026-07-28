@@ -18,6 +18,7 @@ export function useMapViewport(mapSize) {
   const wheelFrameRef = useRef(null)
   const hasInitializedZoomRef = useRef(false)
   const hasInitializedHorizontalScrollRef = useRef(false)
+  const isHorizontalScrollbarDraggingRef = useRef(false)
   const [zoom, setZoom] = useState(0)
   const [viewportSize, setViewportSize] = useState(null)
 
@@ -136,23 +137,76 @@ export function useMapViewport(mapSize) {
       const currentMapSize = mapSizeRef.current
       const currentZoom = zoomRef.current
 
-      if (!currentMapSize || !currentZoom) {
+      if (
+        !currentMapSize ||
+        !currentZoom ||
+        isHorizontalScrollbarDraggingRef.current
+      ) {
         return
       }
 
       const mapWidth = currentMapSize.width * currentZoom
       const scrollLeft = scrollContainer.scrollLeft
+      let nextScrollLeft = scrollLeft
 
-      if (scrollLeft < mapWidth * 0.5) {
-        scrollContainer.scrollLeft = scrollLeft + mapWidth
-      } else if (scrollLeft > mapWidth * 1.5) {
-        scrollContainer.scrollLeft = scrollLeft - mapWidth
+      while (nextScrollLeft < mapWidth * 0.5) {
+        nextScrollLeft += mapWidth
+      }
+
+      while (nextScrollLeft > mapWidth * 1.5) {
+        nextScrollLeft -= mapWidth
+      }
+
+      if (nextScrollLeft !== scrollLeft) {
+        scrollContainer.scrollLeft = nextScrollLeft
       }
     }
 
-    scrollContainer.addEventListener('scroll', keepMiddleMapInView, { passive: true })
+    function handlePointerDown(event) {
+      if (event.target !== scrollContainer) {
+        return
+      }
 
-    return () => scrollContainer.removeEventListener('scroll', keepMiddleMapInView)
+      const rect = scrollContainer.getBoundingClientRect()
+      const scrollbarHeight = scrollContainer.offsetHeight - scrollContainer.clientHeight
+      const isHorizontalScrollbar =
+        scrollbarHeight === 0 || event.clientY >= rect.bottom - scrollbarHeight
+
+      if (isHorizontalScrollbar) {
+        isHorizontalScrollbarDraggingRef.current = true
+      }
+    }
+
+    function finishScrollbarDrag() {
+      if (!isHorizontalScrollbarDraggingRef.current) {
+        return
+      }
+
+      isHorizontalScrollbarDraggingRef.current = false
+      requestAnimationFrame(keepMiddleMapInView)
+    }
+
+    scrollContainer.addEventListener('scroll', keepMiddleMapInView, { passive: true })
+    scrollContainer.addEventListener('pointerdown', handlePointerDown, { passive: true })
+    scrollContainer.addEventListener('scrollend', finishScrollbarDrag, { passive: true })
+    window.addEventListener('pointerup', finishScrollbarDrag)
+    window.addEventListener('pointercancel', finishScrollbarDrag)
+    window.addEventListener('mouseup', finishScrollbarDrag)
+    window.addEventListener('touchend', finishScrollbarDrag)
+    window.addEventListener('touchcancel', finishScrollbarDrag)
+    window.addEventListener('blur', finishScrollbarDrag)
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', keepMiddleMapInView)
+      scrollContainer.removeEventListener('pointerdown', handlePointerDown)
+      scrollContainer.removeEventListener('scrollend', finishScrollbarDrag)
+      window.removeEventListener('pointerup', finishScrollbarDrag)
+      window.removeEventListener('pointercancel', finishScrollbarDrag)
+      window.removeEventListener('mouseup', finishScrollbarDrag)
+      window.removeEventListener('touchend', finishScrollbarDrag)
+      window.removeEventListener('touchcancel', finishScrollbarDrag)
+      window.removeEventListener('blur', finishScrollbarDrag)
+    }
   }, [])
 
   useEffect(() => {

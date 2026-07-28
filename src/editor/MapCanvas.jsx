@@ -176,6 +176,7 @@ export function MapCanvas({
   const riversImageRef = useRef(null)
   const wrappedRenderFrameRef = useRef(null)
   const wrappedDirtyRegionsRef = useRef([FULL_MAP_DIRTY, FULL_MAP_DIRTY])
+  const forceWrappedMapRenderRef = useRef(false)
 
   const renderWrappedMaps = useCallback(() => {
     const baseCanvas = baseCanvasRef.current
@@ -202,11 +203,14 @@ export function MapCanvas({
     const wrappedMaps = [
       {
         canvas: leftWrappedCanvasRef.current,
-        isVisible: scrollContainer.scrollLeft < renderedWidth,
+        isVisible:
+          forceWrappedMapRenderRef.current ||
+          scrollContainer.scrollLeft < renderedWidth,
       },
       {
         canvas: rightWrappedCanvasRef.current,
         isVisible:
+          forceWrappedMapRenderRef.current ||
           scrollContainer.scrollLeft + scrollContainer.clientWidth > renderedWidth * 2,
       },
     ]
@@ -234,6 +238,8 @@ export function MapCanvas({
       })
       wrappedDirtyRegionsRef.current[index] = null
     }
+
+    forceWrappedMapRenderRef.current = false
   }, [
     baseCanvasRef,
     borderCanvasRef,
@@ -284,10 +290,29 @@ export function MapCanvas({
       return undefined
     }
 
-    scrollContainer.addEventListener('scroll', queueWrappedMapRender, { passive: true })
+    function prepareWrappedMapsForScrollbar(event) {
+      if (event.target !== scrollContainer) {
+        return
+      }
 
-    return () => scrollContainer.removeEventListener('scroll', queueWrappedMapRender)
-  }, [mapScrollRef, queueWrappedMapRender])
+      forceWrappedMapRenderRef.current = true
+      scheduleWrappedMapRender()
+    }
+
+    scrollContainer.addEventListener('scroll', queueWrappedMapRender, { passive: true })
+    scrollContainer.addEventListener('pointerdown', prepareWrappedMapsForScrollbar, {
+      passive: true,
+    })
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', queueWrappedMapRender)
+      scrollContainer.removeEventListener('pointerdown', prepareWrappedMapsForScrollbar)
+    }
+  }, [
+    mapScrollRef,
+    queueWrappedMapRender,
+    scheduleWrappedMapRender,
+  ])
 
   useEffect(
     () => () => {

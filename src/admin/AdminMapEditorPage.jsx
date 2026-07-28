@@ -11,6 +11,23 @@ import { useMapEditor } from '../editor/useMapEditor'
 import { useMapData } from '../map/useMapData'
 import { useMapViewport } from '../map/useMapViewport'
 
+const MAP_TOOL_SHORTCUTS = {
+  KeyQ: 'paint',
+  KeyW: 'eyedropper',
+  KeyE: 'erase',
+  KeyR: 'hand',
+}
+
+function blocksMapToolShortcut(target) {
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target?.isContentEditable ||
+    target?.closest?.('[role="dialog"]')
+  )
+}
+
 export function AdminMapEditorPage() {
   const [page, setPage] = useState('editor')
   const [borderMode, setBorderMode] = useState('state')
@@ -43,7 +60,7 @@ export function AdminMapEditorPage() {
     statesByIdRef: mapData.statesByIdRef,
     syncWrappedMap: mapData.syncWrappedMap,
   })
-  const { redo, undo } = editor
+  const { redo, setActiveTool, setTemporaryPanActive, undo } = editor
   const sphereLayerActive =
     editor.sphereLayerSettings.selectedIdsByMode[editor.sphereLayerSettings.mode]?.length > 0
 
@@ -83,6 +100,65 @@ export function AdminMapEditorPage() {
     window.addEventListener('keydown', handleHistoryShortcut)
     return () => window.removeEventListener('keydown', handleHistoryShortcut)
   }, [redo, undo])
+
+  useEffect(() => {
+    function handleToolShortcut(event) {
+      if (event.key === 'Alt') {
+        if (
+          page === 'editor' &&
+          !event.repeat &&
+          !blocksMapToolShortcut(event.target)
+        ) {
+          event.preventDefault()
+          setTemporaryPanActive(true)
+        }
+
+        return
+      }
+
+      const nextTool = MAP_TOOL_SHORTCUTS[event.code]
+
+      if (
+        page !== 'editor' ||
+        !nextTool ||
+        event.defaultPrevented ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        blocksMapToolShortcut(event.target)
+      ) {
+        return
+      }
+
+      event.preventDefault()
+      setActiveTool(nextTool)
+    }
+
+    function releaseTemporaryPan(event) {
+      if (!event || event.type !== 'keyup' || event.key === 'Alt') {
+        setTemporaryPanActive(false)
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.hidden) {
+        releaseTemporaryPan()
+      }
+    }
+
+    window.addEventListener('keydown', handleToolShortcut)
+    window.addEventListener('keyup', releaseTemporaryPan)
+    window.addEventListener('blur', releaseTemporaryPan)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.removeEventListener('keydown', handleToolShortcut)
+      window.removeEventListener('keyup', releaseTemporaryPan)
+      window.removeEventListener('blur', releaseTemporaryPan)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      setTemporaryPanActive(false)
+    }
+  }, [page, setActiveTool, setTemporaryPanActive])
 
   return (
     <main
@@ -146,7 +222,7 @@ export function AdminMapEditorPage() {
         mapRenderSyncRef={mapData.mapRenderSyncRef}
         mapScrollRef={viewport.mapScrollRef}
         mapTrackStyle={viewport.mapTrackStyle}
-        onActiveToolChange={editor.setActiveTool}
+        onActiveToolChange={setActiveTool}
         onPaintModeChange={editor.setPaintMode}
         onPaintUnitChange={editor.setPaintUnit}
         onPointerDown={editor.handlePointerDown}

@@ -113,7 +113,8 @@ export function useMapEditor({
   const panRef = useRef(null)
   const sphereLayerSettingsRef = useRef(DEFAULT_SPHERE_LAYER_SETTINGS)
 
-  const [activeTool, setActiveTool] = useState('paint')
+  const [selectedTool, setActiveTool] = useState('paint')
+  const [isTemporaryPanActive, setTemporaryPanActive] = useState(false)
   const [paintMode, setPaintMode] = useState('multi')
   const [paintUnit, setPaintUnit] = useState('state')
   const [autonomyTypes, setAutonomyTypes] = useState(() => createDefaultAutonomyTypes())
@@ -141,6 +142,7 @@ export function useMapEditor({
     canRedo: false,
   })
 
+  const activeTool = isTemporaryPanActive ? 'hand' : selectedTool
   const activeCountry = countries[activeCountryId]
   const preset = useMemo(
     () => ({
@@ -1201,6 +1203,7 @@ export function useMapEditor({
     setActiveTool,
     setPaintMode,
     setPaintUnit,
+    setTemporaryPanActive,
     sphereLayerSettings,
     updateAutonomyType,
     updateCountry,

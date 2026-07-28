@@ -85,7 +85,6 @@ function createsOverlordCycle(countryId, overlordId, countries) {
 
 export function useMapEditor({
   activePage,
-  baseCanvasRef,
   mapSize,
   mapScrollRef,
   overlayCanvasRef,
@@ -102,6 +101,7 @@ export function useMapEditor({
   sphereImageDataRef,
   stateByProvinceRef,
   statesByIdRef,
+  syncWrappedMap,
 }) {
   const assignmentsRef = useRef({})
   const historyStateRef = useRef(null)
@@ -319,20 +319,51 @@ export function useMapEditor({
         appearance?.opacity ?? 1,
       )
     }
+
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+
+    for (const province of provinces) {
+      const cacheEntry = provincePixelCacheRef.current.get(province.id)
+
+      if (!cacheEntry) {
+        continue
+      }
+
+      minX = Math.min(minX, cacheEntry.minX)
+      minY = Math.min(minY, cacheEntry.minY)
+      maxX = Math.max(maxX, cacheEntry.maxX)
+      maxY = Math.max(maxY, cacheEntry.maxY)
+    }
+
+    if (Number.isFinite(minX)) {
+      syncWrappedMap({
+        x: minX,
+        y: minY,
+        width: maxX - minX + 1,
+        height: maxY - minY + 1,
+      })
+    }
   }
 
   function getProvinceFromPointer(event) {
     const sourceImageData = sourceImageDataRef.current
-    const canvas = baseCanvasRef.current
 
-    if (!sourceImageData || !canvas) {
+    if (!sourceImageData) {
       return null
     }
 
-    const rect = canvas.getBoundingClientRect()
-    const x = Math.floor(((event.clientX - rect.left) / rect.width) * canvas.width)
-    const y = Math.floor(((event.clientY - rect.top) / rect.height) * canvas.height)
-    const pixelIndex = (y * canvas.width + x) * 4
+    const rect = event.currentTarget.getBoundingClientRect()
+    const x = Math.floor(((event.clientX - rect.left) / rect.width) * sourceImageData.width)
+    const y = Math.floor(((event.clientY - rect.top) / rect.height) * sourceImageData.height)
+
+    if (x < 0 || x >= sourceImageData.width || y < 0 || y >= sourceImageData.height) {
+      return null
+    }
+
+    const pixelIndex = (y * sourceImageData.width + x) * 4
     const data = sourceImageData.data
     const rgb = `${data[pixelIndex]},${data[pixelIndex + 1]},${data[pixelIndex + 2]}`
     const province = provinceByRgbRef.current.get(rgb)
@@ -448,10 +479,8 @@ export function useMapEditor({
     if (activeTool === 'hand') {
       panRef.current = {
         pointerId: event.pointerId,
-        startX: event.clientX,
-        startY: event.clientY,
-        scrollLeft: mapScrollRef.current.scrollLeft,
-        scrollTop: mapScrollRef.current.scrollTop,
+        lastX: event.clientX,
+        lastY: event.clientY,
       }
       event.currentTarget.setPointerCapture(event.pointerId)
       return
@@ -477,8 +506,10 @@ export function useMapEditor({
 
     if (activeTool === 'hand' && panRef.current) {
       const scrollContainer = mapScrollRef.current
-      scrollContainer.scrollLeft = panRef.current.scrollLeft - (event.clientX - panRef.current.startX)
-      scrollContainer.scrollTop = panRef.current.scrollTop - (event.clientY - panRef.current.startY)
+      scrollContainer.scrollLeft -= event.clientX - panRef.current.lastX
+      scrollContainer.scrollTop -= event.clientY - panRef.current.lastY
+      panRef.current.lastX = event.clientX
+      panRef.current.lastY = event.clientY
       return
     }
 
@@ -607,6 +638,81 @@ export function useMapEditor({
     return true
   }
 
+  function deleteCountry(countryId) {
+    if (!countries[countryId]) {
+      return false
+    }
+
+    const deletedIndex = countryOrder.indexOf(countryId)
+    const nextCountryOrder = countryOrder.filter((orderedId) => orderedId !== countryId)
+    const nextActiveCountryId =
+      activeCountryId === countryId
+        ? nextCountryOrder[Math.min(deletedIndex, nextCountryOrder.length - 1)] ?? ''
+        : activeCountryId
+    const fallbackAutonomyTypeId = getAvailableTypeId(
+      autonomyTypes,
+      DEFAULT_AUTONOMY_TYPE_ID,
+      'autonomy',
+      true,
+    )
+    const nextCountries = {}
+
+    for (const [otherCountryId, country] of Object.entries(countries)) {
+      if (otherCountryId === countryId) {
+        continue
+      }
+
+      nextCountries[otherCountryId] =
+        country.overlordId === countryId
+          ? {
+              ...country,
+              autonomyTypeId: fallbackAutonomyTypeId,
+              overlordId: null,
+            }
+          : country
+    }
+
+    const nextAssignments = Object.fromEntries(
+      Object.entries(assignmentsRef.current).filter(
+        ([, assignedCountryId]) => assignedCountryId !== countryId,
+      ),
+    )
+    const nextPowerBlocs = Object.fromEntries(
+      Object.entries(powerBlocs).flatMap(([blocId, bloc]) =>
+        bloc.leaderCountryId === countryId
+          ? []
+          : [[
+              blocId,
+              {
+                ...bloc,
+                memberCountryIds: bloc.memberCountryIds.filter(
+                  (memberCountryId) => memberCountryId !== countryId,
+                ),
+              },
+            ]],
+      ),
+    )
+
+    recordHistory()
+    assignmentsRef.current = nextAssignments
+    setAssignments(nextAssignments)
+    setCountries(nextCountries)
+    setCountryOrder(nextCountryOrder)
+    setPowerBlocs(nextPowerBlocs)
+    setActiveCountryId(nextActiveCountryId)
+    redrawAllOverlay(nextAssignments, nextCountries)
+    redrawSphereLayer(
+      nextAssignments,
+      nextCountries,
+      autonomyTypes,
+      powerRankTypes,
+      nextPowerBlocs,
+      sphereLayerSettingsRef.current,
+    )
+    setStatus('국가가 삭제되었습니다.')
+    return true
+  }
+
   function reorderCountries(orderedCountryIds) {
     const knownCountryIds = new Set(Object.keys(countries))
     const nextCountryOrder = orderedCountryIds.filter((countryId) =>
@@ -707,14 +813,25 @@ export function useMapEditor({
       return false
     }
 
+    const normalizedType = {
+      name: nextType.name,
+      englishName: nextType.englishName,
+      autonomy,
+    }
+    const currentType = autonomyTypes[typeId]
+
+    if (
+      currentType.name === normalizedType.name &&
+      currentType.englishName === normalizedType.englishName &&
+      currentType.autonomy === normalizedType.autonomy
+    ) {
+      return true
+    }
+
     recordHistory()
     setAutonomyTypes((currentTypes) => ({
       ...currentTypes,
-      [typeId]: {
-        name: nextType.name.trim() || typeId,
-        englishName: nextType.englishName.trim(),
-        autonomy,
-      },
+      [typeId]: normalizedType,
     }))
 
     if (autonomy === 10 && countriesUsingType.length > 0) {
@@ -734,22 +851,46 @@ export function useMapEditor({
   }
 
   function deleteAutonomyType(typeId) {
-    if (
-      Object.keys(autonomyTypes).length <= 1 ||
-      Object.values(countries).some((country) => country.autonomyTypeId === typeId)
-    ) {
+    return deleteAutonomyTypes([typeId]).length > 0
+  }
+
+  function deleteAutonomyTypes(typeIds) {
+    const selectedTypeIds = new Set(typeIds)
+    const allTypeIds = Object.keys(autonomyTypes)
+    let deletableTypeIds = allTypeIds.filter(
+      (typeId) =>
+        selectedTypeIds.has(typeId) &&
+        !Object.values(countries).some(
+          (country) => country.autonomyTypeId === typeId,
+        ),
+    )
+
+    if (deletableTypeIds.length === allTypeIds.length) {
+      const protectedTypeId = autonomyTypes[DEFAULT_AUTONOMY_TYPE_ID]
+        ? DEFAULT_AUTONOMY_TYPE_ID
+        : allTypeIds[0]
+      deletableTypeIds = deletableTypeIds.filter(
+        (typeId) => typeId !== protectedTypeId,
+      )
+    }
+
+    if (deletableTypeIds.length === 0) {
       setStatus('사용 중이거나 마지막 남은 자치도 유형은 삭제할 수 없습니다.')
-      return false
+      return []
     }
 
     recordHistory()
     setAutonomyTypes((currentTypes) => {
       const nextTypes = { ...currentTypes }
-      delete nextTypes[typeId]
+
+      for (const typeId of deletableTypeIds) {
+        delete nextTypes[typeId]
+      }
+
       return nextTypes
     })
-    setStatus('자치도 유형이 삭제되었습니다.')
-    return true
+    setStatus(`자치도 유형 ${deletableTypeIds.length}개가 삭제되었습니다.`)
+    return deletableTypeIds
   }
 
   function addPowerRankType() {
@@ -783,36 +924,71 @@ export function useMapEditor({
       return false
     }
 
+    const normalizedType = {
+      name: nextType.name,
+      englishName: nextType.englishName,
+      level,
+    }
+    const currentType = powerRankTypes[typeId]
+
+    if (
+      currentType.name === normalizedType.name &&
+      currentType.englishName === normalizedType.englishName &&
+      currentType.level === normalizedType.level
+    ) {
+      return true
+    }
+
     recordHistory()
     setPowerRankTypes((currentTypes) => ({
       ...currentTypes,
-      [typeId]: {
-        name: nextType.name.trim() || typeId,
-        englishName: nextType.englishName.trim(),
-        level,
-      },
+      [typeId]: normalizedType,
     }))
     setStatus('국가 등급이 적용되었습니다.')
     return true
   }
 
   function deletePowerRankType(typeId) {
-    if (
-      Object.keys(powerRankTypes).length <= 1 ||
-      Object.values(countries).some((country) => country.powerRankTypeId === typeId)
-    ) {
+    return deletePowerRankTypes([typeId]).length > 0
+  }
+
+  function deletePowerRankTypes(typeIds) {
+    const selectedTypeIds = new Set(typeIds)
+    const allTypeIds = Object.keys(powerRankTypes)
+    let deletableTypeIds = allTypeIds.filter(
+      (typeId) =>
+        selectedTypeIds.has(typeId) &&
+        !Object.values(countries).some(
+          (country) => country.powerRankTypeId === typeId,
+        ),
+    )
+
+    if (deletableTypeIds.length === allTypeIds.length) {
+      const protectedTypeId = powerRankTypes[DEFAULT_POWER_RANK_TYPE_ID]
+        ? DEFAULT_POWER_RANK_TYPE_ID
+        : allTypeIds[0]
+      deletableTypeIds = deletableTypeIds.filter(
+        (typeId) => typeId !== protectedTypeId,
+      )
+    }
+
+    if (deletableTypeIds.length === 0) {
       setStatus('사용 중이거나 마지막 남은 국가 등급은 삭제할 수 없습니다.')
-      return false
+      return []
     }
 
     recordHistory()
     setPowerRankTypes((currentTypes) => {
       const nextTypes = { ...currentTypes }
-      delete nextTypes[typeId]
+
+      for (const typeId of deletableTypeIds) {
+        delete nextTypes[typeId]
+      }
+
       return nextTypes
     })
-    setStatus('국가 등급이 삭제되었습니다.')
-    return true
+    setStatus(`국가 등급 ${deletableTypeIds.length}개가 삭제되었습니다.`)
+    return deletableTypeIds
   }
 
   function savePowerBloc(blocId, nextBloc) {
@@ -863,18 +1039,31 @@ export function useMapEditor({
   }
 
   function deletePowerBloc(blocId) {
-    if (!powerBlocs[blocId]) {
-      return false
+    return deletePowerBlocs([blocId]).length > 0
+  }
+
+  function deletePowerBlocs(blocIds) {
+    const selectedBlocIds = new Set(blocIds)
+    const deletableBlocIds = Object.keys(powerBlocs).filter((blocId) =>
+      selectedBlocIds.has(blocId),
+    )
+
+    if (deletableBlocIds.length === 0) {
+      return []
     }
 
     recordHistory()
     setPowerBlocs((currentPowerBlocs) => {
       const nextPowerBlocs = { ...currentPowerBlocs }
-      delete nextPowerBlocs[blocId]
+
+      for (const blocId of deletableBlocIds) {
+        delete nextPowerBlocs[blocId]
+      }
+
       return nextPowerBlocs
     })
-    setStatus('세력 블록이 삭제되었습니다.')
-    return true
+    setStatus(`세력 블록 ${deletableBlocIds.length}개가 삭제되었습니다.`)
+    return deletableBlocIds
   }
 
   function removeAssignment() {
@@ -987,8 +1176,12 @@ export function useMapEditor({
     canRedo: historyAvailability.canRedo,
     canUndo: historyAvailability.canUndo,
     deleteAutonomyType,
+    deleteAutonomyTypes,
+    deleteCountry,
     deletePowerBloc,
+    deletePowerBlocs,
     deletePowerRankType,
+    deletePowerRankTypes,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,

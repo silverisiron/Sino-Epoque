@@ -20,6 +20,7 @@ export function useMapData(borderMode) {
   const sphereCanvasRef = useRef(null)
   const borderCanvasRef = useRef(null)
   const borderImageDataCacheRef = useRef(new Map())
+  const mapRenderSyncRef = useRef(null)
   const sourceImageDataRef = useRef(null)
   const overlayImageDataRef = useRef(null)
   const sphereImageDataRef = useRef(null)
@@ -35,6 +36,10 @@ export function useMapData(borderMode) {
   const [presetIndex, setPresetIndex] = useState([])
   const [selectedPresetPath, setSelectedPresetPath] = useState('')
 
+  const syncWrappedMap = useCallback((dirtyRegion) => {
+    mapRenderSyncRef.current?.(dirtyRegion)
+  }, [])
+
   const redrawAllOverlay = useCallback((assignments, countries) => {
     drawAllOverlay(
       overlayCanvasRef.current,
@@ -44,7 +49,8 @@ export function useMapData(borderMode) {
       assignments,
       countries,
     )
-  }, [])
+    syncWrappedMap()
+  }, [syncWrappedMap])
 
   const redrawSphereLayer = useCallback((
     assignments,
@@ -65,7 +71,8 @@ export function useMapData(borderMode) {
       powerBlocs,
       settings,
     )
-  }, [])
+    syncWrappedMap()
+  }, [syncWrappedMap])
 
   useEffect(() => {
     let ignore = false
@@ -145,6 +152,7 @@ export function useMapData(borderMode) {
 
         await waitForPaint()
         drawBlankMap(baseCanvas, sourceImageData, provinceByRgb)
+        syncWrappedMap()
 
         setMapSize({ width: baseCanvas.width, height: baseCanvas.height })
         setStatus('지도 로드 완료')
@@ -161,7 +169,7 @@ export function useMapData(borderMode) {
     return () => {
       ignore = true
     }
-  }, [])
+  }, [syncWrappedMap])
 
   useEffect(() => {
     let ignore = false
@@ -176,6 +184,7 @@ export function useMapData(borderMode) {
 
       if (borderMode === 'none') {
         borderContext.clearRect(0, 0, borderCanvas.width, borderCanvas.height)
+        syncWrappedMap()
         setIsMapRendering(false)
         return
       }
@@ -184,6 +193,7 @@ export function useMapData(borderMode) {
 
       if (cachedBorder) {
         borderContext.putImageData(cachedBorder, 0, 0)
+        syncWrappedMap()
         setIsMapRendering(false)
         return
       }
@@ -203,6 +213,7 @@ export function useMapData(borderMode) {
       )
       borderImageDataCacheRef.current.set(borderMode, borderImageData)
       borderContext.putImageData(borderImageData, 0, 0)
+      syncWrappedMap()
       setIsMapRendering(false)
     }
 
@@ -211,12 +222,13 @@ export function useMapData(borderMode) {
     return () => {
       ignore = true
     }
-  }, [borderMode, mapSize])
+  }, [borderMode, mapSize, syncWrappedMap])
 
   return {
     baseCanvasRef,
     borderCanvasRef,
     isMapRendering,
+    mapRenderSyncRef,
     mapSize,
     overlayCanvasRef,
     overlayImageDataRef,
@@ -235,5 +247,6 @@ export function useMapData(borderMode) {
     stateByProvinceRef,
     statesByIdRef,
     status,
+    syncWrappedMap,
   }
 }

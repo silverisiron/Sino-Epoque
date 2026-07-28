@@ -25,7 +25,6 @@ export function AdminMapEditorPage() {
   const viewport = useMapViewport(mapData.mapSize)
   const editor = useMapEditor({
     activePage: page,
-    baseCanvasRef: mapData.baseCanvasRef,
     mapSize: mapData.mapSize,
     mapScrollRef: viewport.mapScrollRef,
     overlayCanvasRef: mapData.overlayCanvasRef,
@@ -42,6 +41,7 @@ export function AdminMapEditorPage() {
     sphereImageDataRef: mapData.sphereImageDataRef,
     stateByProvinceRef: mapData.stateByProvinceRef,
     statesByIdRef: mapData.statesByIdRef,
+    syncWrappedMap: mapData.syncWrappedMap,
   })
   const { redo, undo } = editor
   const sphereLayerActive =
@@ -120,10 +120,13 @@ export function AdminMapEditorPage() {
             onAddPowerBloc={editor.addPowerBloc}
             onAddPowerRankType={editor.addPowerRankType}
             onAutonomyTypeDelete={editor.deleteAutonomyType}
+            onAutonomyTypesDelete={editor.deleteAutonomyTypes}
             onAutonomyTypeUpdate={editor.updateAutonomyType}
             onPowerBlocDelete={editor.deletePowerBloc}
+            onPowerBlocsDelete={editor.deletePowerBlocs}
             onPowerBlocUpdate={editor.updatePowerBloc}
             onPowerRankTypeDelete={editor.deletePowerRankType}
+            onPowerRankTypesDelete={editor.deletePowerRankTypes}
             onPowerRankTypeUpdate={editor.updatePowerRankType}
             powerBlocs={editor.powerBlocs}
             powerRankTypes={editor.powerRankTypes}
@@ -139,7 +142,10 @@ export function AdminMapEditorPage() {
         canRedo={editor.canRedo}
         canUndo={editor.canUndo}
         isMapRendering={mapData.isMapRendering}
+        mapImageRendering={viewport.mapImageRendering}
+        mapRenderSyncRef={mapData.mapRenderSyncRef}
         mapScrollRef={viewport.mapScrollRef}
+        mapTrackStyle={viewport.mapTrackStyle}
         onActiveToolChange={editor.setActiveTool}
         onPaintModeChange={editor.setPaintMode}
         onPaintUnitChange={editor.setPaintUnit}
@@ -176,10 +182,11 @@ export function AdminMapEditorPage() {
             <CountryPanel
               activeCountryId={editor.activeCountryId}
               autonomyTypes={editor.autonomyTypes}
-              countries={editor.countries}
-              countryOrder={editor.countryOrder}
-              onAddCountry={editor.addCountry}
-              onCountryOrderChange={editor.reorderCountries}
+            countries={editor.countries}
+            countryOrder={editor.countryOrder}
+            onAddCountry={editor.addCountry}
+            onCountryDelete={editor.deleteCountry}
+            onCountryOrderChange={editor.reorderCountries}
               onCountryUpdate={editor.updateCountry}
               onSelectCountry={editor.setActiveCountryId}
               powerBlocs={editor.powerBlocs}

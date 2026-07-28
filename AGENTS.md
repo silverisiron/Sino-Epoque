@@ -1,26 +1,29 @@
-# Follow this Guidelines
+# AGENTS.md
 
 ## Stack
 
-- React
-- React Compiler
+- Vite
+- React (JavaScript)
+- React Router
 - Tailwind CSS v4
-- Lucide Icons (lucide-react)
-- Tailwind Merge (tailwind-merge)
+- lucide-react
+- tailwind-merge
+- ESLint
+- Prettier
+- Dev Server Port: 5173.
 
 ## Development Rules
 
-- Follow the user's request while also applying the rules below.
-- If the requested implementation is likely inefficient, technically flawed, or can be significantly improved, explain the concern and propose a better approach before implementing it.
-- Only implement the original approach if the user explicitly confirms.
-- Do not modify unrelated code, UI, behavior, styling, structure, or files unless explicitly requested.
+- If instructions conflict, follow the user's latest explicit request first, then this file, then existing project conventions.
 - If any requirement is ambiguous or uncertain, do not implement anything. Ask clarifying questions first.
-- Reuse existing components whenever possible before creating new ones.
-- Follow modern React best practices based on the official React documentation.
-- Avoid premature optimization. Prioritize readability and maintainability.
-- Use semantic HTML and follow web standards.
-- Keep components small, focused, and composable.
-- Minimize unnecessary dependencies.
+- If the requested implementation is likely inefficient, technically flawed, or can be significantly improved, explain the concern and propose a better approach before implementing it.
+- Follow modern best practices based on the official Language or Library documentation.
+- Do not modify unrelated code, styling, broad refactors, structure, or move files without a clear reason. 
 - Preserve the existing project architecture and coding style unless instructed otherwise.
-- Make the smallest change necessary to accomplish the requested task.
-- The VS Code Codex environment not provide an interactive browser.
+- Reuse existing components whenever possible before creating new ones, minimize unnecessary dependencies.
+
+### Frontend
+- Use semantic HTML and follow web standards.
+
+## Report
+Keep reports concise and factual, yet include any follow-up risks or decision points that the user needs to be aware of.

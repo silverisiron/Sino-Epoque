@@ -97,7 +97,7 @@ export function PowerBlocEditModal({
 
       <fieldset className="min-w-0">
         <legend className="text-sm font-semibold">회원국</legend>
-        <div className="grid max-h-[36vh] gap-1 overflow-y-auto">
+        <div className="scrollbar-custom grid max-h-[36vh] gap-1 overflow-y-auto">
           {countryOrder
             .filter((countryId) => countryId !== draft.leaderCountryId)
             .map((countryId) => {

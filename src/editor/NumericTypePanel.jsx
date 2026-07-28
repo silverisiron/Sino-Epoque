@@ -68,7 +68,7 @@ export function NumericTypePanel({
 }) {
   return (
     <PanelSection headingId={headingId} onAction={onAdd} title={heading}>
-      <ul className="grid max-h-[32vh] list-none gap-1.5 overflow-y-auto">
+      <ul className="scrollbar-custom grid max-h-[32vh] list-none gap-1.5 overflow-y-auto">
         {Object.entries(types)
           .sort(([, left], [, right]) => right[valueKey] - left[valueKey])
           .map(([typeId, type]) => (

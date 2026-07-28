@@ -5,7 +5,7 @@ const PANEL_LAYOUT_CLASS_NAME =
   'pointer-events-none grid min-h-0 min-w-0 min-[56.25rem]:col-start-1 min-[56.25rem]:row-start-2 min-[56.25rem]:z-10 min-[56.25rem]:w-80'
 
 const CONTENT_LAYOUT_CLASS_NAME =
-  'pointer-events-auto grid gap-3 min-h-0 min-w-0 content-start min-[56.25rem]:overflow-y-auto'
+  'scrollbar-custom pointer-events-auto grid gap-3 min-h-0 min-w-0 content-start min-[56.25rem]:overflow-y-auto'
 
 export function MapEditorPanel({
   children,

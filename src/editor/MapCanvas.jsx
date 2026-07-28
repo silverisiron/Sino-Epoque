@@ -32,7 +32,7 @@ export function MapCanvas({
       aria-label="지도 캔버스"
     >
       <div
-        className="relative size-full overflow-auto bg-canvas max-[56.25rem]:max-h-[60vh]"
+        className="scrollbar-custom relative size-full overflow-auto bg-canvas max-[56.25rem]:max-h-[60vh]"
         ref={mapScrollRef}
       >
         <div className="grid min-h-full min-w-full place-items-center">

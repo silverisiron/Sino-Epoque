@@ -6,6 +6,7 @@
 - React Compiler
 - Tailwind CSS v4
 - Lucide Icons (lucide-react)
+- Tailwind Merge (tailwind-merge)
 
 ## Development Rules
 

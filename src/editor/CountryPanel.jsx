@@ -241,7 +241,7 @@ export function CountryPanel({
         </button>
       </div>
 
-      <ul className="grid max-h-[40vh] list-none gap-2 overflow-y-auto overscroll-none">
+      <ul className="scrollbar-custom grid max-h-[40vh] list-none gap-2 overflow-y-auto overscroll-none">
         {visibleCountryIds.map((countryId) => {
           const country = countries[countryId]
 

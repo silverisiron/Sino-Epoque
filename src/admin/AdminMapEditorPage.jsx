@@ -8,6 +8,7 @@ import { PresetLoader } from '../editor/PresetLoader'
 import { ProvinceInfo } from '../editor/ProvinceInfo'
 import { SphereLayerModal } from '../editor/SphereLayerModal'
 import { useMapEditor } from '../editor/useMapEditor'
+import { downloadRenderedMapPng } from '../map/exportMapImage'
 import { useMapData } from '../map/useMapData'
 import { useMapViewport } from '../map/useMapViewport'
 
@@ -69,6 +70,22 @@ export function AdminMapEditorPage() {
       ...currentLayers,
       [layerId]: isVisible,
     }))
+  }
+
+  async function handleExportPng() {
+    try {
+      await downloadRenderedMapPng({
+        baseCanvas: mapData.baseCanvasRef.current,
+        borderCanvas: mapData.borderCanvasRef.current,
+        heightmapVisible: rasterLayers.heightmap,
+        overlayCanvas: mapData.overlayCanvasRef.current,
+        riversVisible: rasterLayers.rivers,
+        sphereCanvas: mapData.sphereCanvasRef.current,
+      })
+      mapData.setStatus('원본 해상도 PNG가 저장되었습니다.')
+    } catch (error) {
+      mapData.setStatus(error.message || 'PNG 저장에 실패했습니다.')
+    }
   }
 
   useEffect(() => {
@@ -262,9 +279,11 @@ export function AdminMapEditorPage() {
             countryOrder={editor.countryOrder}
             onAddCountry={editor.addCountry}
             onCountryDelete={editor.deleteCountry}
-            onCountryOrderChange={editor.reorderCountries}
+              onCountryOrderChange={editor.reorderCountries}
               onCountryUpdate={editor.updateCountry}
+              onExportPng={handleExportPng}
               onSelectCountry={editor.setActiveCountryId}
+              pngExportDisabled={!mapData.mapSize || mapData.isMapRendering}
               powerBlocs={editor.powerBlocs}
               powerRankTypes={editor.powerRankTypes}
               preset={editor.preset}

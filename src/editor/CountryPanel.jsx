@@ -101,7 +101,9 @@ export function CountryPanel({
   onCountryDelete,
   onCountryOrderChange,
   onCountryUpdate,
+  onExportPng,
   onSelectCountry,
+  pngExportDisabled,
   powerBlocs,
   powerRankTypes,
   preset,
@@ -109,6 +111,7 @@ export function CountryPanel({
   const [draggedCountryId, setDraggedCountryId] = useState(null)
   const [editingCountryId, setEditingCountryId] = useState(null)
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
+  const [isExportingPng, setIsExportingPng] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [countryFilter, setCountryFilter] = useState(EMPTY_COUNTRY_FILTER)
   const deferredSearchQuery = useDeferredValue(searchQuery)
@@ -212,6 +215,16 @@ export function CountryPanel({
     setDraggedCountryId(null)
   }
 
+  async function exportPng() {
+    setIsExportingPng(true)
+
+    try {
+      await onExportPng()
+    } finally {
+      setIsExportingPng(false)
+    }
+  }
+
   const editingCountry = editingCountryId ? countries[editingCountryId] : null
 
   return (
@@ -281,6 +294,15 @@ export function CountryPanel({
         onClick={() => downloadJson('map-preset.json', preset)}
       >
         JSON으로 프리셋 저장하기
+      </button>
+
+      <button
+        type="button"
+        className="w-full"
+        disabled={pngExportDisabled || isExportingPng}
+        onClick={exportPng}
+      >
+        {isExportingPng ? 'PNG 생성 중...' : '원본 해상도 PNG로 저장하기'}
       </button>
 
       {editingCountry ? (

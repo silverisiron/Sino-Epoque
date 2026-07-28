@@ -25,7 +25,6 @@ export function AdminMapEditorPage() {
   const viewport = useMapViewport(mapData.mapSize)
   const editor = useMapEditor({
     activePage: page,
-    baseCanvasRef: mapData.baseCanvasRef,
     mapSize: mapData.mapSize,
     mapScrollRef: viewport.mapScrollRef,
     overlayCanvasRef: mapData.overlayCanvasRef,
@@ -42,6 +41,7 @@ export function AdminMapEditorPage() {
     sphereImageDataRef: mapData.sphereImageDataRef,
     stateByProvinceRef: mapData.stateByProvinceRef,
     statesByIdRef: mapData.statesByIdRef,
+    syncWrappedMap: mapData.syncWrappedMap,
   })
   const { redo, undo } = editor
   const sphereLayerActive =
@@ -139,7 +139,10 @@ export function AdminMapEditorPage() {
         canRedo={editor.canRedo}
         canUndo={editor.canUndo}
         isMapRendering={mapData.isMapRendering}
+        mapImageRendering={viewport.mapImageRendering}
+        mapRenderSyncRef={mapData.mapRenderSyncRef}
         mapScrollRef={viewport.mapScrollRef}
+        mapTrackStyle={viewport.mapTrackStyle}
         onActiveToolChange={editor.setActiveTool}
         onPaintModeChange={editor.setPaintMode}
         onPaintUnitChange={editor.setPaintUnit}

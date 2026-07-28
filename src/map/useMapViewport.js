@@ -5,6 +5,7 @@ const WHEEL_ZOOM_SENSITIVITY = 0.001
 const MAX_ZOOM = 8
 const MOBILE_MAX_ZOOM = 2
 const MOBILE_QUERY = '(max-width: 56.249rem)'
+const WRAPPED_MAP_COUNT = 3
 
 export function useMapViewport(mapSize) {
   const mapScrollRef = useRef(null)
@@ -16,6 +17,7 @@ export function useMapViewport(mapSize) {
   const wheelAnchorRef = useRef(null)
   const wheelFrameRef = useRef(null)
   const hasInitializedZoomRef = useRef(false)
+  const hasInitializedHorizontalScrollRef = useRef(false)
   const [zoom, setZoom] = useState(0)
   const [viewportSize, setViewportSize] = useState(null)
 
@@ -47,14 +49,19 @@ export function useMapViewport(mapSize) {
     const rect = scrollContainer.getBoundingClientRect()
     const anchorX = anchor ? anchor.clientX - rect.left : rect.width / 2
     const anchorY = anchor ? anchor.clientY - rect.top : rect.height / 2
-    const mapX = (scrollContainer.scrollLeft + anchorX) / currentZoom
+    const currentMapWidth = mapSizeRef.current.width * currentZoom
+    const wrappedX =
+      ((scrollContainer.scrollLeft + anchorX) % currentMapWidth + currentMapWidth) %
+      currentMapWidth
+    const mapX = wrappedX / currentZoom
     const mapY = (scrollContainer.scrollTop + anchorY) / currentZoom
+    const nextMapWidth = mapSizeRef.current.width * clampedZoom
 
     zoomRef.current = clampedZoom
     setZoom(clampedZoom)
 
     requestAnimationFrame(() => {
-      scrollContainer.scrollLeft = mapX * clampedZoom - anchorX
+      scrollContainer.scrollLeft = nextMapWidth + mapX * clampedZoom - anchorX
       scrollContainer.scrollTop = mapY * clampedZoom - anchorY
     })
   }, [])
@@ -98,6 +105,55 @@ export function useMapViewport(mapSize) {
     zoomRef.current = nextZoom
     setZoom(nextZoom)
   }, [minZoom])
+
+  useEffect(() => {
+    const scrollContainer = mapScrollRef.current
+
+    if (
+      !scrollContainer ||
+      !mapSize ||
+      !zoom ||
+      hasInitializedHorizontalScrollRef.current
+    ) {
+      return
+    }
+
+    hasInitializedHorizontalScrollRef.current = true
+
+    requestAnimationFrame(() => {
+      scrollContainer.scrollLeft = mapSize.width * zoom
+    })
+  }, [mapSize, zoom])
+
+  useEffect(() => {
+    const scrollContainer = mapScrollRef.current
+
+    if (!scrollContainer) {
+      return undefined
+    }
+
+    function keepMiddleMapInView() {
+      const currentMapSize = mapSizeRef.current
+      const currentZoom = zoomRef.current
+
+      if (!currentMapSize || !currentZoom) {
+        return
+      }
+
+      const mapWidth = currentMapSize.width * currentZoom
+      const scrollLeft = scrollContainer.scrollLeft
+
+      if (scrollLeft < mapWidth * 0.5) {
+        scrollContainer.scrollLeft = scrollLeft + mapWidth
+      } else if (scrollLeft > mapWidth * 1.5) {
+        scrollContainer.scrollLeft = scrollLeft - mapWidth
+      }
+    }
+
+    scrollContainer.addEventListener('scroll', keepMiddleMapInView, { passive: true })
+
+    return () => scrollContainer.removeEventListener('scroll', keepMiddleMapInView)
+  }, [])
 
   useEffect(() => {
     const scrollContainer = mapScrollRef.current
@@ -148,10 +204,22 @@ export function useMapViewport(mapSize) {
         : undefined,
     [mapSize, zoom],
   )
+  const mapTrackStyle = useMemo(
+    () =>
+      mapSize && zoom
+        ? {
+            width: `${mapSize.width * zoom * WRAPPED_MAP_COUNT}px`,
+            height: `${mapSize.height * zoom}px`,
+          }
+        : undefined,
+    [mapSize, zoom],
+  )
 
   return {
     canvasStyle,
+    mapImageRendering: zoom < 1 ? 'auto' : 'pixelated',
     mapScrollRef,
+    mapTrackStyle,
     updateZoom,
     zoom,
     zoomRef,

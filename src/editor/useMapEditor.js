@@ -85,7 +85,6 @@ function createsOverlordCycle(countryId, overlordId, countries) {
 
 export function useMapEditor({
   activePage,
-  baseCanvasRef,
   mapSize,
   mapScrollRef,
   overlayCanvasRef,
@@ -102,6 +101,7 @@ export function useMapEditor({
   sphereImageDataRef,
   stateByProvinceRef,
   statesByIdRef,
+  syncWrappedMap,
 }) {
   const assignmentsRef = useRef({})
   const historyStateRef = useRef(null)
@@ -319,20 +319,51 @@ export function useMapEditor({
         appearance?.opacity ?? 1,
       )
     }
+
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+
+    for (const province of provinces) {
+      const cacheEntry = provincePixelCacheRef.current.get(province.id)
+
+      if (!cacheEntry) {
+        continue
+      }
+
+      minX = Math.min(minX, cacheEntry.minX)
+      minY = Math.min(minY, cacheEntry.minY)
+      maxX = Math.max(maxX, cacheEntry.maxX)
+      maxY = Math.max(maxY, cacheEntry.maxY)
+    }
+
+    if (Number.isFinite(minX)) {
+      syncWrappedMap({
+        x: minX,
+        y: minY,
+        width: maxX - minX + 1,
+        height: maxY - minY + 1,
+      })
+    }
   }
 
   function getProvinceFromPointer(event) {
     const sourceImageData = sourceImageDataRef.current
-    const canvas = baseCanvasRef.current
 
-    if (!sourceImageData || !canvas) {
+    if (!sourceImageData) {
       return null
     }
 
-    const rect = canvas.getBoundingClientRect()
-    const x = Math.floor(((event.clientX - rect.left) / rect.width) * canvas.width)
-    const y = Math.floor(((event.clientY - rect.top) / rect.height) * canvas.height)
-    const pixelIndex = (y * canvas.width + x) * 4
+    const rect = event.currentTarget.getBoundingClientRect()
+    const x = Math.floor(((event.clientX - rect.left) / rect.width) * sourceImageData.width)
+    const y = Math.floor(((event.clientY - rect.top) / rect.height) * sourceImageData.height)
+
+    if (x < 0 || x >= sourceImageData.width || y < 0 || y >= sourceImageData.height) {
+      return null
+    }
+
+    const pixelIndex = (y * sourceImageData.width + x) * 4
     const data = sourceImageData.data
     const rgb = `${data[pixelIndex]},${data[pixelIndex + 1]},${data[pixelIndex + 2]}`
     const province = provinceByRgbRef.current.get(rgb)
@@ -448,10 +479,8 @@ export function useMapEditor({
     if (activeTool === 'hand') {
       panRef.current = {
         pointerId: event.pointerId,
-        startX: event.clientX,
-        startY: event.clientY,
-        scrollLeft: mapScrollRef.current.scrollLeft,
-        scrollTop: mapScrollRef.current.scrollTop,
+        lastX: event.clientX,
+        lastY: event.clientY,
       }
       event.currentTarget.setPointerCapture(event.pointerId)
       return
@@ -477,8 +506,10 @@ export function useMapEditor({
 
     if (activeTool === 'hand' && panRef.current) {
       const scrollContainer = mapScrollRef.current
-      scrollContainer.scrollLeft = panRef.current.scrollLeft - (event.clientX - panRef.current.startX)
-      scrollContainer.scrollTop = panRef.current.scrollTop - (event.clientY - panRef.current.startY)
+      scrollContainer.scrollLeft -= event.clientX - panRef.current.lastX
+      scrollContainer.scrollTop -= event.clientY - panRef.current.lastY
+      panRef.current.lastX = event.clientX
+      panRef.current.lastY = event.clientY
       return
     }
 

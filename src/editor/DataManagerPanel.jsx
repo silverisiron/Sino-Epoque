@@ -9,10 +9,12 @@ export function DataManagerPanel({
   onAddPowerBloc,
   onAddPowerRankType,
   onAutonomyTypeDelete,
+  onAutonomyTypesDelete,
   onAutonomyTypeUpdate,
   onPowerBlocDelete,
   onPowerBlocUpdate,
   onPowerRankTypeDelete,
+  onPowerRankTypesDelete,
   onPowerRankTypeUpdate,
   powerBlocs,
   powerRankTypes,
@@ -28,6 +30,7 @@ export function DataManagerPanel({
         }
         onAdd={onAddAutonomyType}
         onDelete={onAutonomyTypeDelete}
+        onDeleteSelected={onAutonomyTypesDelete}
         onUpdate={onAutonomyTypeUpdate}
         types={autonomyTypes}
         valueKey="autonomy"
@@ -43,6 +46,7 @@ export function DataManagerPanel({
         }
         onAdd={onAddPowerRankType}
         onDelete={onPowerRankTypeDelete}
+        onDeleteSelected={onPowerRankTypesDelete}
         onUpdate={onPowerRankTypeUpdate}
         types={powerRankTypes}
         valueKey="level"

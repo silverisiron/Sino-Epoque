@@ -25,9 +25,11 @@ export function CountryEditModal({
   countryOrder,
   onApply,
   onClose,
+  onDelete,
   powerRankTypes,
 }) {
   const [draft, setDraft] = useState({ ...country })
+  const [isDeleteConfirming, setIsDeleteConfirming] = useState(false)
   const autonomyType = autonomyTypes[draft.autonomyTypeId] ?? autonomyTypes.independent
   const powerRankType =
     powerRankTypes[draft.powerRankTypeId] ?? powerRankTypes.decentralized
@@ -65,6 +67,17 @@ export function CountryEditModal({
 
   function updateDraft(nextFields) {
     setDraft((currentDraft) => ({ ...currentDraft, ...nextFields }))
+  }
+
+  function deleteCountry() {
+    if (!isDeleteConfirming) {
+      setIsDeleteConfirming(true)
+      return
+    }
+
+    if (onDelete(countryId)) {
+      onClose()
+    }
   }
 
   return (
@@ -159,6 +172,20 @@ export function CountryEditModal({
       ) : null}
 
       {colorIsUsed ? <p className="text-danger">이미 사용 중인 색상입니다.</p> : null}
+
+      {isDeleteConfirming ? (
+        <p className="text-red-600" role="alert">
+          한 번 더 누르면 배정된 프로빈스와 관련 세력 블록 정보도 함께 삭제됩니다.
+        </p>
+      ) : null}
+
+      <button
+        type="button"
+        className="w-full border-red-600 text-red-600"
+        onClick={deleteCountry}
+      >
+        {isDeleteConfirming ? '국가 삭제 확인' : '국가 삭제'}
+      </button>
     </EditorModal>
   )
 }

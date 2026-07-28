@@ -98,6 +98,7 @@ export function CountryPanel({
   countries,
   countryOrder,
   onAddCountry,
+  onCountryDelete,
   onCountryOrderChange,
   onCountryUpdate,
   onSelectCountry,
@@ -291,6 +292,7 @@ export function CountryPanel({
           countryOrder={countryOrder}
           onApply={(nextCountry) => onCountryUpdate(editingCountryId, nextCountry)}
           onClose={() => setEditingCountryId(null)}
+          onDelete={onCountryDelete}
           powerRankTypes={powerRankTypes}
         />
       ) : null}

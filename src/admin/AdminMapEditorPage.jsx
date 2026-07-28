@@ -120,10 +120,12 @@ export function AdminMapEditorPage() {
             onAddPowerBloc={editor.addPowerBloc}
             onAddPowerRankType={editor.addPowerRankType}
             onAutonomyTypeDelete={editor.deleteAutonomyType}
+            onAutonomyTypesDelete={editor.deleteAutonomyTypes}
             onAutonomyTypeUpdate={editor.updateAutonomyType}
             onPowerBlocDelete={editor.deletePowerBloc}
             onPowerBlocUpdate={editor.updatePowerBloc}
             onPowerRankTypeDelete={editor.deletePowerRankType}
+            onPowerRankTypesDelete={editor.deletePowerRankTypes}
             onPowerRankTypeUpdate={editor.updatePowerRankType}
             powerBlocs={editor.powerBlocs}
             powerRankTypes={editor.powerRankTypes}
@@ -179,10 +181,11 @@ export function AdminMapEditorPage() {
             <CountryPanel
               activeCountryId={editor.activeCountryId}
               autonomyTypes={editor.autonomyTypes}
-              countries={editor.countries}
-              countryOrder={editor.countryOrder}
-              onAddCountry={editor.addCountry}
-              onCountryOrderChange={editor.reorderCountries}
+            countries={editor.countries}
+            countryOrder={editor.countryOrder}
+            onAddCountry={editor.addCountry}
+            onCountryDelete={editor.deleteCountry}
+            onCountryOrderChange={editor.reorderCountries}
               onCountryUpdate={editor.updateCountry}
               onSelectCountry={editor.setActiveCountryId}
               powerBlocs={editor.powerBlocs}

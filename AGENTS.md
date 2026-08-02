@@ -25,5 +25,5 @@
 ### Frontend
 - Use semantic HTML and follow web standards.
 
-## Report
+## After Development Report
 Keep reports concise and factual, yet include any follow-up risks or decision points that the user needs to be aware of.

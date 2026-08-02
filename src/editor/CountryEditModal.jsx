@@ -1,21 +1,6 @@
 import { useState } from 'react'
+import { wouldCreateOverlordCycle } from '../map/worldRelations'
 import { EditorModal } from './EditorModal'
-
-function createsOverlordCycle(countryId, overlordId, countries) {
-  const visited = new Set()
-  let currentCountryId = overlordId
-
-  while (currentCountryId) {
-    if (currentCountryId === countryId || visited.has(currentCountryId)) {
-      return true
-    }
-
-    visited.add(currentCountryId)
-    currentCountryId = countries[currentCountryId]?.overlordId ?? null
-  }
-
-  return false
-}
 
 export function CountryEditModal({
   autonomyTypes,
@@ -23,10 +8,10 @@ export function CountryEditModal({
   country,
   countryId,
   countryOrder,
-  onApply,
+  deleteCountry,
   onClose,
-  onDelete,
   powerRankTypes,
+  updateCountry,
 }) {
   const [draft, setDraft] = useState({ ...country })
   const [isDeleteConfirming, setIsDeleteConfirming] = useState(false)
@@ -43,7 +28,7 @@ export function CountryEditModal({
     (otherCountryId) =>
       otherCountryId !== countryId &&
       countries[otherCountryId] &&
-      !createsOverlordCycle(countryId, otherCountryId, countries),
+      !wouldCreateOverlordCycle(countryId, otherCountryId, countries),
   )
   const overlordIsInvalid =
     requiresOverlord && !availableOverlords.includes(draft.overlordId)
@@ -61,31 +46,34 @@ export function CountryEditModal({
     }))
   }
 
-  function applyChanges() {
-    return !isInvalid && onApply({ ...draft, name: draft.name.trim() })
+  function submitCountryChanges() {
+    return (
+      !isInvalid &&
+      updateCountry(countryId, { ...draft, name: draft.name.trim() })
+    )
   }
 
   function updateDraft(nextFields) {
     setDraft((currentDraft) => ({ ...currentDraft, ...nextFields }))
   }
 
-  function deleteCountry() {
+  function confirmCountryDeletion() {
     if (!isDeleteConfirming) {
       setIsDeleteConfirming(true)
       return
     }
 
-    if (onDelete(countryId)) {
+    if (deleteCountry(countryId)) {
       onClose()
     }
   }
 
   return (
     <EditorModal
-      applyDisabled={isInvalid}
       labelledBy="country-edit-title"
-      onApply={applyChanges}
       onClose={onClose}
+      onSubmit={submitCountryChanges}
+      submitDisabled={isInvalid}
       title="국가 편집"
     >
       <label>
@@ -182,7 +170,7 @@ export function CountryEditModal({
       <button
         type="button"
         className="w-full border-red-600 text-red-600"
-        onClick={deleteCountry}
+        onClick={confirmCountryDeletion}
       >
         {isDeleteConfirming ? '국가 삭제 확인' : '국가 삭제'}
       </button>

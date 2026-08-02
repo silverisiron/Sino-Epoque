@@ -2,8 +2,8 @@ import { useId, useRef, useState } from 'react'
 import { ChoiceInput } from './ChoiceInput'
 
 export function MapToolbar({
-  activeTool,
-  onActiveToolChange,
+  effectiveTool,
+  onToolSelect,
   onPaintModeChange,
   onPaintUnitChange,
   paintMode,
@@ -45,10 +45,10 @@ export function MapToolbar({
     >
       <li className="relative" onKeyDown={handlePaintSettingsKeyDown}>
         <ChoiceInput
-          checked={activeTool === 'paint'}
+          checked={effectiveTool === 'paint'}
           name="map-tool"
           value="paint"
-          onChange={() => onActiveToolChange('paint')}
+          onChange={() => onToolSelect('paint')}
         >
           그리기
         </ChoiceInput>
@@ -115,10 +115,10 @@ export function MapToolbar({
 
       <li>
         <ChoiceInput
-          checked={activeTool === 'eyedropper'}
+          checked={effectiveTool === 'eyedropper'}
           name="map-tool"
           value="eyedropper"
-          onChange={() => onActiveToolChange('eyedropper')}
+          onChange={() => onToolSelect('eyedropper')}
         >
           스포이드
         </ChoiceInput>
@@ -126,10 +126,10 @@ export function MapToolbar({
 
       <li>
         <ChoiceInput
-          checked={activeTool === 'erase'}
+          checked={effectiveTool === 'erase'}
           name="map-tool"
           value="erase"
-          onChange={() => onActiveToolChange('erase')}
+          onChange={() => onToolSelect('erase')}
         >
           지우개
         </ChoiceInput>
@@ -137,10 +137,10 @@ export function MapToolbar({
 
       <li>
         <ChoiceInput
-          checked={activeTool === 'hand'}
+          checked={effectiveTool === 'hand'}
           name="map-tool"
           value="hand"
-          onChange={() => onActiveToolChange('hand')}
+          onChange={() => onToolSelect('hand')}
         >
           화면 이동
         </ChoiceInput>

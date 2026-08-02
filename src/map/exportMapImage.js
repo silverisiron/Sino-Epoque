@@ -1,3 +1,5 @@
+import { compositeMapLayers } from './mapLayerCompositor'
+
 const HEIGHTMAP_IMAGE_PATH = '/maps/base/bmp/heightmap.bmp'
 const RIVERS_IMAGE_PATH = '/maps/base/bmp/rivers.bmp'
 
@@ -35,19 +37,13 @@ function downloadBlob(fileName, blob) {
   setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
 }
 
-function drawLayer(context, source, width, height) {
-  if (source?.width) {
-    context.drawImage(source, 0, 0, width, height)
-  }
-}
-
 export async function downloadRenderedMapPng({
   baseCanvas,
   borderCanvas,
+  countryLayerCanvas,
   heightmapVisible,
   overlayCanvas,
   riversVisible,
-  sphereCanvas,
 }) {
   if (!baseCanvas?.width || !baseCanvas.height) {
     throw new Error('내보낼 지도가 아직 준비되지 않았습니다.')
@@ -66,27 +62,20 @@ export async function downloadRenderedMapPng({
 
   const context = exportCanvas.getContext('2d')
 
-  context.imageSmoothingEnabled = true
-  context.globalAlpha = 1
-  context.globalCompositeOperation = 'source-over'
-  drawLayer(context, baseCanvas, width, height)
-  drawLayer(context, overlayCanvas, width, height)
-  drawLayer(context, sphereCanvas, width, height)
-  context.globalCompositeOperation = 'multiply'
-
-  if (heightmapImage) {
-    context.globalAlpha = 0.35
-    drawLayer(context, heightmapImage, width, height)
-  }
-
-  if (riversImage) {
-    context.globalAlpha = 1
-    drawLayer(context, riversImage, width, height)
-  }
-
-  context.globalAlpha = 1
-  context.globalCompositeOperation = 'source-over'
-  drawLayer(context, borderCanvas, width, height)
+  const fullMapRegion = { x: 0, y: 0, width, height }
+  compositeMapLayers({
+    baseCanvas,
+    borderCanvas,
+    context,
+    countryLayerCanvas,
+    heightmapSource: heightmapImage,
+    heightmapVisible,
+    overlayCanvas,
+    riversSource: riversImage,
+    riversVisible,
+    sourceRegion: fullMapRegion,
+    targetRegion: fullMapRegion,
+  })
 
   downloadBlob('map-render.png', await createPngBlob(exportCanvas))
 }

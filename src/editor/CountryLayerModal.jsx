@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { createPowerBlocItems } from './model/powerBlocOperations'
 import { ChoiceInput } from './ChoiceInput'
 import { EditorModal } from './EditorModal'
 import { LayerTypeFieldset } from './LayerTypeFieldset'
+import { SelectAllButton } from './SelectAllButton'
 
 const LAYER_MODES = [
   ['autonomy', '자치도 유형'],
@@ -9,39 +11,23 @@ const LAYER_MODES = [
   ['powerBloc', '세력 블록'],
 ]
 
-export function SphereLayerModal({
+export function CountryLayerModal({
   autonomyTypes,
   countries,
-  onApply,
   onClose,
   powerBlocs,
   powerRankTypes,
   settings,
+  updateCountryLayerSettings,
 }) {
-  const [mode, setMode] = useState(settings.mode ?? 'autonomy')
+  const [mode, setMode] = useState(settings.mode)
   const [selectedIdsByMode, setSelectedIdsByMode] = useState(
-    settings.selectedIdsByMode ?? {
-      autonomy: settings.selectedTypeIds ?? [],
-      powerRank: [],
-      powerBloc: [],
-    },
+    settings.selectedIdsByMode,
   )
   const [opacityByIdByMode, setOpacityByIdByMode] = useState(
-    settings.opacityByIdByMode ?? {
-      autonomy: settings.opacityByType ?? {},
-      powerRank: {},
-      powerBloc: {},
-    },
+    settings.opacityByIdByMode,
   )
-  const powerBlocItems = Object.fromEntries(
-    Object.entries(powerBlocs).map(([blocId, bloc]) => [
-      blocId,
-      {
-        name: bloc.name,
-        englishName: countries[bloc.leaderCountryId]?.name ?? bloc.leaderCountryId,
-      },
-    ]),
-  )
+  const powerBlocItems = createPowerBlocItems(powerBlocs, countries)
   const layerConfig = {
     autonomy: {
       defaultOpacity: 90,
@@ -62,6 +48,9 @@ export function SphereLayerModal({
       legend: '세력 블록',
     },
   }[mode]
+  const availableTypeIds = Object.entries(layerConfig.items)
+    .filter(([, item]) => (layerConfig.filterItem ?? (() => true))(item))
+    .map(([typeId]) => typeId)
 
   function toggleType(typeId) {
     setSelectedIdsByMode((currentSelections) => {
@@ -100,26 +89,39 @@ export function SphereLayerModal({
     })
   }
 
-  function applyChanges() {
-    onApply({ mode, selectedIdsByMode, opacityByIdByMode })
+  function submitCountryLayerSettings() {
+    updateCountryLayerSettings({ mode, selectedIdsByMode, opacityByIdByMode })
     return true
+  }
+
+  function toggleAllLayerTypes() {
+    const selectedTypeIds = selectedIdsByMode[mode] ?? []
+    const shouldSelectAll = availableTypeIds.some(
+      (typeId) => !selectedTypeIds.includes(typeId),
+    )
+
+    setSelectedIdsByMode((currentSelections) => ({
+      ...currentSelections,
+      [mode]: shouldSelectAll ? availableTypeIds : [],
+    }))
   }
 
   return (
     <EditorModal
-      enableSelectAll
-      labelledBy="sphere-layer-title"
-      onApply={applyChanges}
+      labelledBy="country-layer-title"
       onClose={onClose}
+      onSubmit={submitCountryLayerSettings}
       title="레이어 설정"
     >
+      <SelectAllButton onToggle={toggleAllLayerTypes} />
+
       <fieldset className="flex min-w-0 gap-1.5 *:flex-1">
         <legend className="sr-only">지도 레이어 종류</legend>
         {LAYER_MODES.map(([layerMode, label]) => (
           <ChoiceInput
             checked={mode === layerMode}
             key={layerMode}
-            name="sphere-layer-mode"
+            name="country-layer-mode"
             value={layerMode}
             onChange={() => setMode(layerMode)}
           >

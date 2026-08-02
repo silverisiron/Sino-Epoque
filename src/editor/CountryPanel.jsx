@@ -1,5 +1,4 @@
 import { useDeferredValue, useMemo, useRef, useState } from 'react'
-import { downloadJson } from '../map/mapData'
 import { createCountryBlocIndex, getTopIndependentCountryId } from '../map/worldRelations'
 import { CountryEditModal } from './CountryEditModal'
 import { CountryFilterModal } from './CountryFilterModal'
@@ -22,9 +21,9 @@ function CountryRow({
   onCountryDragEnd,
   onCountryDragStart,
   onCountryDrop,
-  onCountryUpdate,
   onEdit,
-  onSelectCountry,
+  selectCountry,
+  updateCountry,
 }) {
   const colorInputRef = useRef(null)
 
@@ -40,7 +39,7 @@ function CountryRow({
       data-dragging={draggedCountryId === countryId}
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => onCountryDrop(event, countryId)}
-      onClick={() => onSelectCountry(countryId)}
+      onClick={() => selectCountry(countryId)}
     >
       <button
         type="button"
@@ -70,10 +69,12 @@ function CountryRow({
           type="color"
           value={country.color}
           onClick={(event) => event.stopPropagation()}
-          onChange={(event) => onCountryUpdate(countryId, {
-            ...country,
-            color: event.target.value,
-          })}
+          onChange={(event) =>
+            updateCountry(countryId, {
+              ...country,
+              color: event.target.value,
+            })
+          }
         />
       </div>
       <div className="grid min-w-0 gap-0.5 [&>span]:truncate [&>span]:text-xs [&>span]:text-muted [&>strong]:truncate">
@@ -94,24 +95,20 @@ function CountryRow({
 
 export function CountryPanel({
   activeCountryId,
+  addCountry,
   autonomyTypes,
   countries,
   countryOrder,
-  onAddCountry,
-  onCountryDelete,
-  onCountryOrderChange,
-  onCountryUpdate,
-  onExportPng,
-  onSelectCountry,
-  pngExportDisabled,
+  deleteCountry,
   powerBlocs,
   powerRankTypes,
-  preset,
+  reorderCountries,
+  selectCountry,
+  updateCountry,
 }) {
   const [draggedCountryId, setDraggedCountryId] = useState(null)
   const [editingCountryId, setEditingCountryId] = useState(null)
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
-  const [isExportingPng, setIsExportingPng] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [countryFilter, setCountryFilter] = useState(EMPTY_COUNTRY_FILTER)
   const deferredSearchQuery = useDeferredValue(searchQuery)
@@ -211,18 +208,8 @@ export function CountryPanel({
 
     orderedCountryIds.splice(sourceIndex, 1)
     orderedCountryIds.splice(targetIndex, 0, sourceCountryId)
-    onCountryOrderChange(orderedCountryIds)
+    reorderCountries(orderedCountryIds)
     setDraggedCountryId(null)
-  }
-
-  async function exportPng() {
-    setIsExportingPng(true)
-
-    try {
-      await onExportPng()
-    } finally {
-      setIsExportingPng(false)
-    }
   }
 
   const editingCountry = editingCountryId ? countries[editingCountryId] : null
@@ -230,7 +217,7 @@ export function CountryPanel({
   return (
     <PanelSection
       headingId="countries-title"
-      onAction={onAddCountry}
+      onAction={addCountry}
       title="국가 설정"
     >
       <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-1.5 [&>input]:min-w-0">
@@ -275,9 +262,9 @@ export function CountryPanel({
               onCountryDragEnd={() => setDraggedCountryId(null)}
               onCountryDragStart={handleCountryDragStart}
               onCountryDrop={handleCountryDrop}
-              onCountryUpdate={onCountryUpdate}
               onEdit={setEditingCountryId}
-              onSelectCountry={onSelectCountry}
+              selectCountry={selectCountry}
+              updateCountry={updateCountry}
             />
           )
         })}
@@ -288,23 +275,6 @@ export function CountryPanel({
         ) : null}
       </ul>
 
-      <button
-        type="button"
-        className="w-full"
-        onClick={() => downloadJson('map-preset.json', preset)}
-      >
-        JSON으로 프리셋 저장하기
-      </button>
-
-      <button
-        type="button"
-        className="w-full"
-        disabled={pngExportDisabled || isExportingPng}
-        onClick={exportPng}
-      >
-        {isExportingPng ? 'PNG 생성 중...' : '원본 해상도 PNG로 저장하기'}
-      </button>
-
       {editingCountry ? (
         <CountryEditModal
           autonomyTypes={autonomyTypes}
@@ -312,10 +282,10 @@ export function CountryPanel({
           country={editingCountry}
           countryId={editingCountryId}
           countryOrder={countryOrder}
-          onApply={(nextCountry) => onCountryUpdate(editingCountryId, nextCountry)}
+          deleteCountry={deleteCountry}
           onClose={() => setEditingCountryId(null)}
-          onDelete={onCountryDelete}
           powerRankTypes={powerRankTypes}
+          updateCountry={updateCountry}
         />
       ) : null}
 
@@ -323,7 +293,7 @@ export function CountryPanel({
         <CountryFilterModal
           autonomyTypes={autonomyTypes}
           countries={countries}
-          onApply={applyCountryFilter}
+          applyCountryFilter={applyCountryFilter}
           onClose={() => setIsFilterModalOpen(false)}
           powerBlocs={powerBlocs}
           powerRankTypes={powerRankTypes}

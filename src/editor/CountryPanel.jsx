@@ -1,4 +1,5 @@
 import { useDeferredValue, useMemo, useRef, useState } from 'react'
+import { downloadJson } from '../map/mapData'
 import { createCountryBlocIndex, getTopIndependentCountryId } from '../map/worldRelations'
 import { CountryEditModal } from './CountryEditModal'
 import { CountryFilterModal } from './CountryFilterModal'
@@ -21,9 +22,9 @@ function CountryRow({
   onCountryDragEnd,
   onCountryDragStart,
   onCountryDrop,
+  onCountryUpdate,
   onEdit,
-  selectCountry,
-  updateCountry,
+  onSelectCountry,
 }) {
   const colorInputRef = useRef(null)
 
@@ -39,7 +40,7 @@ function CountryRow({
       data-dragging={draggedCountryId === countryId}
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => onCountryDrop(event, countryId)}
-      onClick={() => selectCountry(countryId)}
+      onClick={() => onSelectCountry(countryId)}
     >
       <button
         type="button"
@@ -69,12 +70,10 @@ function CountryRow({
           type="color"
           value={country.color}
           onClick={(event) => event.stopPropagation()}
-          onChange={(event) =>
-            updateCountry(countryId, {
-              ...country,
-              color: event.target.value,
-            })
-          }
+          onChange={(event) => onCountryUpdate(countryId, {
+            ...country,
+            color: event.target.value,
+          })}
         />
       </div>
       <div className="grid min-w-0 gap-0.5 [&>span]:truncate [&>span]:text-xs [&>span]:text-muted [&>strong]:truncate">
@@ -95,16 +94,17 @@ function CountryRow({
 
 export function CountryPanel({
   activeCountryId,
-  addCountry,
   autonomyTypes,
   countries,
   countryOrder,
-  deleteCountry,
+  onAddCountry,
+  onCountryDelete,
+  onCountryOrderChange,
+  onCountryUpdate,
+  onSelectCountry,
   powerBlocs,
   powerRankTypes,
-  reorderCountries,
-  selectCountry,
-  updateCountry,
+  preset,
 }) {
   const [draggedCountryId, setDraggedCountryId] = useState(null)
   const [editingCountryId, setEditingCountryId] = useState(null)
@@ -208,7 +208,7 @@ export function CountryPanel({
 
     orderedCountryIds.splice(sourceIndex, 1)
     orderedCountryIds.splice(targetIndex, 0, sourceCountryId)
-    reorderCountries(orderedCountryIds)
+    onCountryOrderChange(orderedCountryIds)
     setDraggedCountryId(null)
   }
 
@@ -217,7 +217,7 @@ export function CountryPanel({
   return (
     <PanelSection
       headingId="countries-title"
-      onAction={addCountry}
+      onAction={onAddCountry}
       title="국가 설정"
     >
       <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-1.5 [&>input]:min-w-0">
@@ -262,9 +262,9 @@ export function CountryPanel({
               onCountryDragEnd={() => setDraggedCountryId(null)}
               onCountryDragStart={handleCountryDragStart}
               onCountryDrop={handleCountryDrop}
+              onCountryUpdate={onCountryUpdate}
               onEdit={setEditingCountryId}
-              selectCountry={selectCountry}
-              updateCountry={updateCountry}
+              onSelectCountry={onSelectCountry}
             />
           )
         })}
@@ -275,6 +275,14 @@ export function CountryPanel({
         ) : null}
       </ul>
 
+      <button
+        type="button"
+        className="w-full"
+        onClick={() => downloadJson('map-preset.json', preset)}
+      >
+        JSON으로 프리셋 저장하기
+      </button>
+
       {editingCountry ? (
         <CountryEditModal
           autonomyTypes={autonomyTypes}
@@ -282,11 +290,10 @@ export function CountryPanel({
           country={editingCountry}
           countryId={editingCountryId}
           countryOrder={countryOrder}
-          deleteCountry={deleteCountry}
+          onApply={(nextCountry) => onCountryUpdate(editingCountryId, nextCountry)}
           onClose={() => setEditingCountryId(null)}
           onDelete={onCountryDelete}
           powerRankTypes={powerRankTypes}
-          updateCountry={updateCountry}
         />
       ) : null}
 
@@ -294,7 +301,7 @@ export function CountryPanel({
         <CountryFilterModal
           autonomyTypes={autonomyTypes}
           countries={countries}
-          applyCountryFilter={applyCountryFilter}
+          onApply={applyCountryFilter}
           onClose={() => setIsFilterModalOpen(false)}
           powerBlocs={powerBlocs}
           powerRankTypes={powerRankTypes}

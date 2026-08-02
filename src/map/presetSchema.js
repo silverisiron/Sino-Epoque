@@ -137,7 +137,7 @@ function normalizePowerRankTypes(rawTypes = {}, includeDefaults = false) {
     : createDefaultPowerRankTypes()
 }
 
-export function getAvailableTypeId(types, preferredId, valueKey, preferHighest) {
+function getFallbackTypeId(types, preferredId, valueKey, preferHighest) {
   if (types[preferredId]) {
     return preferredId
   }
@@ -205,13 +205,13 @@ export function normalizePreset(preset = {}) {
   const includeDefaults = sourceVersion !== 3
   const autonomyTypes = normalizeAutonomyTypes(preset.autonomyTypes, includeDefaults)
   const powerRankTypes = normalizePowerRankTypes(preset.powerRankTypes, includeDefaults)
-  const fallbackAutonomyTypeId = getAvailableTypeId(
+  const fallbackAutonomyTypeId = getFallbackTypeId(
     autonomyTypes,
     DEFAULT_AUTONOMY_TYPE_ID,
     'autonomy',
     true,
   )
-  const fallbackPowerRankTypeId = getAvailableTypeId(
+  const fallbackPowerRankTypeId = getFallbackTypeId(
     powerRankTypes,
     DEFAULT_POWER_RANK_TYPE_ID,
     'level',

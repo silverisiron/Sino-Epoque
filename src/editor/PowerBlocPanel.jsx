@@ -1,19 +1,18 @@
 import { useState } from 'react'
-import Pencil from 'lucide-react/dist/esm/icons/pencil.mjs'
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2.mjs'
+import { Pencil, Trash2 } from 'lucide-react'
 import { PanelSection } from './PanelSection'
 import { PowerBlocEditModal } from './PowerBlocEditModal'
 
 export function PowerBlocPanel({
-  addPowerBloc,
   autonomyTypes,
   countries,
   countryOrder,
-  deletePowerBloc,
-  deletePowerBlocs,
+  onAdd,
+  onDelete,
+  onDeleteSelected,
+  onUpdate,
   powerBlocs,
   powerRankTypes,
-  updatePowerBloc,
 }) {
   const [editingBlocId, setEditingBlocId] = useState(null)
   const [isAdding, setIsAdding] = useState(false)
@@ -43,7 +42,7 @@ export function PowerBlocPanel({
   }
 
   function deleteSelectedBlocs() {
-    deletePowerBlocs(validSelectedBlocIds)
+    onDeleteSelected(validSelectedBlocIds)
     setSelectedBlocIds([])
   }
 
@@ -109,7 +108,7 @@ export function PowerBlocPanel({
               className="grid size-8 min-h-8 place-items-center p-0"
               title="삭제"
               onClick={() => {
-                if (deletePowerBloc(blocId)) {
+                if (onDelete(blocId)) {
                   toggleBloc(blocId, false)
                 }
               }}
@@ -125,10 +124,10 @@ export function PowerBlocPanel({
           autonomyTypes={autonomyTypes}
           countries={countries}
           countryOrder={countryOrder}
+          onApply={onAdd}
           onClose={() => setIsAdding(false)}
           powerBlocs={powerBlocs}
           powerRankTypes={powerRankTypes}
-          savePowerBloc={addPowerBloc}
         />
       ) : null}
 
@@ -139,12 +138,10 @@ export function PowerBlocPanel({
           blocId={editingBlocId}
           countries={countries}
           countryOrder={countryOrder}
+          onApply={(nextBloc) => onUpdate(editingBlocId, nextBloc)}
           onClose={() => setEditingBlocId(null)}
           powerBlocs={powerBlocs}
           powerRankTypes={powerRankTypes}
-          savePowerBloc={(nextBloc) =>
-            updatePowerBloc(editingBlocId, nextBloc)
-          }
         />
       ) : null}
     </PanelSection>

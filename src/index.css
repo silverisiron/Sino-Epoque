@@ -1,9 +1,9 @@
-@import "@fontsource-variable/inter"; 
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 @import "tailwindcss";
 
 
 @theme {
-  --font-sans: "Inter Variable", sans-serif;
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
   
   --color-primary: #17181a;
   --color-primary-hover: #1f2023;

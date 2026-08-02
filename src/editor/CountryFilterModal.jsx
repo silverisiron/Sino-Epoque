@@ -1,13 +1,11 @@
 import { useState } from 'react'
-import { createPowerBlocItems } from './model/powerBlocOperations'
 import { EditorModal } from './EditorModal'
 import { LayerTypeFieldset } from './LayerTypeFieldset'
-import { SelectAllButton } from './SelectAllButton'
 
 export function CountryFilterModal({
-  applyCountryFilter,
   autonomyTypes,
   countries,
+  onApply,
   onClose,
   powerBlocs,
   powerRankTypes,
@@ -25,14 +23,15 @@ export function CountryFilterModal({
     .filter(([, country]) => autonomyTypes[country.autonomyTypeId]?.autonomy === 10)
     .sort(([, left], [, right]) => left.name.localeCompare(right.name, 'ko'))
 
-  const powerBlocItems = createPowerBlocItems(powerBlocs, countries)
-  const availableIdsByCategory = {
-    autonomy: Object.entries(autonomyTypes)
-      .filter(([, type]) => type.autonomy < 10)
-      .map(([typeId]) => typeId),
-    powerRank: Object.keys(powerRankTypes),
-    powerBloc: Object.keys(powerBlocItems),
-  }
+  const powerBlocItems = Object.fromEntries(
+    Object.entries(powerBlocs).map(([blocId, bloc]) => [
+      blocId,
+      {
+        name: bloc.name,
+        englishName: countries[bloc.leaderCountryId]?.name ?? bloc.leaderCountryId,
+      },
+    ]),
+  )
 
   function toggleType(category, typeId) {
     setSelectedIds((currentSelections) => {
@@ -46,8 +45,8 @@ export function CountryFilterModal({
     })
   }
 
-  function submitCountryFilter() {
-    applyCountryFilter({
+  function applyFilter() {
+    onApply({
       independentCountryId,
       autonomyTypeIds: selectedIds.autonomy,
       powerRankTypeIds: selectedIds.powerRank,
@@ -56,34 +55,17 @@ export function CountryFilterModal({
     return true
   }
 
-  function toggleAllFilterTypes() {
-    const shouldSelectAll = Object.entries(availableIdsByCategory).some(
-      ([category, typeIds]) =>
-        typeIds.some((typeId) => !selectedIds[category].includes(typeId)),
-    )
-
-    setSelectedIds(
-      Object.fromEntries(
-        Object.entries(availableIdsByCategory).map(([category, typeIds]) => [
-          category,
-          shouldSelectAll ? typeIds : [],
-        ]),
-      ),
-    )
-  }
-
   return (
     <EditorModal
-      closeOnSubmit
+      applyLabel="검색"
+      closeOnApply
+      enableSelectAll
       labelledBy="country-filter-title"
+      onApply={applyFilter}
       onClose={onClose}
-      onSubmit={submitCountryFilter}
       showSaveAlert={false}
-      submitLabel="검색"
       title="국가 목록 필터"
     >
-      <SelectAllButton onToggle={toggleAllFilterTypes} />
-
       <label>
         최상위 독립국
         <select

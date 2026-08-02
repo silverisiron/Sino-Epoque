@@ -1,23 +1,123 @@
-import { useMapViewport } from '../map/useMapViewport'
-import { useWrappedMapRenderer } from '../map/useWrappedMapRenderer'
+import { useCallback, useEffect, useRef } from 'react'
+import { MapControlGroup } from './MapControlGroup'
 import { MapToolbar } from './MapToolbar'
 
-function MapControlGroup({ children, label, position }) {
-  const positionClassName = position === 'left' ? 'left-4' : 'right-4'
+const FULL_MAP_DIRTY = 'full'
 
-  return (
-    <div
-      className={`fixed bottom-4 z-20 ${positionClassName} grid gap-1 [&>button]:min-h-7 [&>button]:w-8 [&>button]:text-lg [&>button]:leading-none`}
-      role="toolbar"
-      aria-label={label}
-    >
-      {children}
-    </div>
+function mergeDirtyRegions(currentRegion, nextRegion) {
+  if (currentRegion === FULL_MAP_DIRTY || !nextRegion) {
+    return FULL_MAP_DIRTY
+  }
+
+  if (!currentRegion) {
+    return nextRegion
+  }
+
+  const x = Math.min(currentRegion.x, nextRegion.x)
+  const y = Math.min(currentRegion.y, nextRegion.y)
+  const right = Math.max(
+    currentRegion.x + currentRegion.width,
+    nextRegion.x + nextRegion.width,
+  )
+  const bottom = Math.max(
+    currentRegion.y + currentRegion.height,
+    nextRegion.y + nextRegion.height,
+  )
+
+  return { x, y, width: right - x, height: bottom - y }
+}
+
+function drawLayer(context, source, sourceRegion, targetRegion) {
+  if (!source?.width) {
+    return
+  }
+
+  context.drawImage(
+    source,
+    sourceRegion.x,
+    sourceRegion.y,
+    sourceRegion.width,
+    sourceRegion.height,
+    targetRegion.x,
+    targetRegion.y,
+    targetRegion.width,
+    targetRegion.height,
   )
 }
 
+function renderWrappedCanvas({
+  baseCanvas,
+  borderCanvas,
+  dirtyRegion,
+  heightmapImage,
+  heightmapVisible,
+  overlayCanvas,
+  riversImage,
+  riversVisible,
+  sphereCanvas,
+  targetCanvas,
+  targetHeight,
+  targetWidth,
+}) {
+  let region = dirtyRegion
+
+  if (targetCanvas.width !== targetWidth || targetCanvas.height !== targetHeight) {
+    targetCanvas.width = targetWidth
+    targetCanvas.height = targetHeight
+    region = FULL_MAP_DIRTY
+  }
+
+  const sourceRegion =
+    region === FULL_MAP_DIRTY
+      ? { x: 0, y: 0, width: baseCanvas.width, height: baseCanvas.height }
+      : {
+          x: Math.max(0, region.x - 1),
+          y: Math.max(0, region.y - 1),
+          width: Math.min(baseCanvas.width, region.x + region.width + 1) -
+            Math.max(0, region.x - 1),
+          height: Math.min(baseCanvas.height, region.y + region.height + 1) -
+            Math.max(0, region.y - 1),
+        }
+  const scaleX = targetWidth / baseCanvas.width
+  const scaleY = targetHeight / baseCanvas.height
+  const targetRegion = {
+    x: sourceRegion.x * scaleX,
+    y: sourceRegion.y * scaleY,
+    width: sourceRegion.width * scaleX,
+    height: sourceRegion.height * scaleY,
+  }
+  const clearX = Math.floor(targetRegion.x)
+  const clearY = Math.floor(targetRegion.y)
+  const clearRight = Math.ceil(targetRegion.x + targetRegion.width)
+  const clearBottom = Math.ceil(targetRegion.y + targetRegion.height)
+  const context = targetCanvas.getContext('2d')
+
+  context.clearRect(clearX, clearY, clearRight - clearX, clearBottom - clearY)
+  context.imageSmoothingEnabled = true
+  context.globalAlpha = 1
+  context.globalCompositeOperation = 'source-over'
+  drawLayer(context, baseCanvas, sourceRegion, targetRegion)
+  drawLayer(context, overlayCanvas, sourceRegion, targetRegion)
+  drawLayer(context, sphereCanvas, sourceRegion, targetRegion)
+  context.globalCompositeOperation = 'multiply'
+
+  if (heightmapVisible && heightmapImage?.naturalWidth) {
+    context.globalAlpha = 0.35
+    drawLayer(context, heightmapImage, sourceRegion, targetRegion)
+  }
+
+  if (riversVisible && riversImage?.naturalWidth) {
+    context.globalAlpha = 1
+    drawLayer(context, riversImage, sourceRegion, targetRegion)
+  }
+
+  context.globalAlpha = 1
+  context.globalCompositeOperation = 'source-over'
+  drawLayer(context, borderCanvas, sourceRegion, targetRegion)
+}
+
 function WrappedMapTile({
-  effectiveTool,
+  activeTool,
   canvasRef,
   canvasStyle,
   imageRendering,
@@ -30,7 +130,7 @@ function WrappedMapTile({
       <canvas
         ref={canvasRef}
         className="absolute inset-0 block size-full cursor-crosshair touch-none data-[tool=hand]:cursor-grab data-[tool=hand]:active:cursor-grabbing"
-        data-tool={effectiveTool}
+        data-tool={activeTool}
         style={{ imageRendering }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -43,17 +143,18 @@ function WrappedMapTile({
 }
 
 export function MapCanvas({
-  effectiveTool,
+  activeTool,
   baseCanvasRef,
   borderCanvasRef,
   canRedo,
   canUndo,
-  countryLayerCanvasRef,
+  canvasStyle,
   isMapRendering,
   mapScrollRef,
-  wrappedMapInvalidationRef,
-  mapSize,
-  onToolSelect,
+  mapImageRendering,
+  mapRenderSyncRef,
+  mapTrackStyle,
+  onActiveToolChange,
   onPaintModeChange,
   onPaintUnitChange,
   onPointerDown,
@@ -61,29 +162,167 @@ export function MapCanvas({
   onPointerUp,
   onRedo,
   onUndo,
+  onZoomIn,
+  onZoomOut,
   overlayCanvasRef,
   paintMode,
   paintUnit,
   rasterLayers,
+  sphereCanvasRef,
 }) {
-  const viewport = useMapViewport(mapSize, mapScrollRef)
-  const {
-    heightmapImageRef,
-    leftWrappedCanvasRef,
-    rightWrappedCanvasRef,
-    riversImageRef,
-    scheduleWrappedMapRender,
-  } = useWrappedMapRenderer({
+  const leftWrappedCanvasRef = useRef(null)
+  const rightWrappedCanvasRef = useRef(null)
+  const heightmapImageRef = useRef(null)
+  const riversImageRef = useRef(null)
+  const wrappedRenderFrameRef = useRef(null)
+  const wrappedDirtyRegionsRef = useRef([FULL_MAP_DIRTY, FULL_MAP_DIRTY])
+  const forceWrappedMapRenderRef = useRef(false)
+
+  const renderWrappedMaps = useCallback(() => {
+    const baseCanvas = baseCanvasRef.current
+    const scrollContainer = mapScrollRef.current
+
+    if (!baseCanvas?.width || !baseCanvas.height || !scrollContainer) {
+      return
+    }
+
+    const renderedWidth = baseCanvas.getBoundingClientRect().width
+
+    if (!renderedWidth) {
+      return
+    }
+
+    const resolutionScale = Math.min(
+      1,
+      (renderedWidth * Math.max(1, window.devicePixelRatio)) / baseCanvas.width,
+    )
+    const targetWidth = Math.max(1, Math.round(baseCanvas.width * resolutionScale))
+    const targetHeight = Math.max(1, Math.round(baseCanvas.height * resolutionScale))
+    const heightmapImage = heightmapImageRef.current
+    const riversImage = riversImageRef.current
+    const wrappedMaps = [
+      {
+        canvas: leftWrappedCanvasRef.current,
+        isVisible:
+          forceWrappedMapRenderRef.current ||
+          scrollContainer.scrollLeft < renderedWidth,
+      },
+      {
+        canvas: rightWrappedCanvasRef.current,
+        isVisible:
+          forceWrappedMapRenderRef.current ||
+          scrollContainer.scrollLeft + scrollContainer.clientWidth > renderedWidth * 2,
+      },
+    ]
+
+    for (const [index, wrappedMap] of wrappedMaps.entries()) {
+      const dirtyRegion = wrappedDirtyRegionsRef.current[index]
+
+      if (!wrappedMap.canvas || !wrappedMap.isVisible || !dirtyRegion) {
+        continue
+      }
+
+      renderWrappedCanvas({
+        baseCanvas,
+        borderCanvas: borderCanvasRef.current,
+        dirtyRegion,
+        heightmapImage,
+        heightmapVisible: rasterLayers.heightmap,
+        overlayCanvas: overlayCanvasRef.current,
+        riversImage,
+        riversVisible: rasterLayers.rivers,
+        sphereCanvas: sphereCanvasRef.current,
+        targetCanvas: wrappedMap.canvas,
+        targetHeight,
+        targetWidth,
+      })
+      wrappedDirtyRegionsRef.current[index] = null
+    }
+
+    forceWrappedMapRenderRef.current = false
+  }, [
     baseCanvasRef,
     borderCanvasRef,
-    canvasStyle: viewport.canvasStyle,
-    heightmapVisible: rasterLayers.heightmap,
-    wrappedMapInvalidationRef,
     mapScrollRef,
     overlayCanvasRef,
-    riversVisible: rasterLayers.rivers,
-    countryLayerCanvasRef,
-  })
+    rasterLayers.heightmap,
+    rasterLayers.rivers,
+    sphereCanvasRef,
+  ])
+
+  const queueWrappedMapRender = useCallback(() => {
+    if (wrappedRenderFrameRef.current !== null) {
+      return
+    }
+
+    wrappedRenderFrameRef.current = requestAnimationFrame(() => {
+      wrappedRenderFrameRef.current = null
+      renderWrappedMaps()
+    })
+  }, [renderWrappedMaps])
+
+  const scheduleWrappedMapRender = useCallback((dirtyRegion) => {
+    wrappedDirtyRegionsRef.current = wrappedDirtyRegionsRef.current.map((currentRegion) =>
+      mergeDirtyRegions(currentRegion, dirtyRegion),
+    )
+    queueWrappedMapRender()
+  }, [queueWrappedMapRender])
+
+  useEffect(() => {
+    mapRenderSyncRef.current = scheduleWrappedMapRender
+    scheduleWrappedMapRender()
+
+    return () => {
+      if (mapRenderSyncRef.current === scheduleWrappedMapRender) {
+        mapRenderSyncRef.current = null
+      }
+    }
+  }, [mapRenderSyncRef, scheduleWrappedMapRender])
+
+  useEffect(() => {
+    scheduleWrappedMapRender()
+  }, [canvasStyle, rasterLayers.heightmap, rasterLayers.rivers, scheduleWrappedMapRender])
+
+  useEffect(() => {
+    const scrollContainer = mapScrollRef.current
+
+    if (!scrollContainer) {
+      return undefined
+    }
+
+    function prepareWrappedMapsForScrollbar(event) {
+      if (event.target !== scrollContainer) {
+        return
+      }
+
+      forceWrappedMapRenderRef.current = true
+      scheduleWrappedMapRender()
+    }
+
+    scrollContainer.addEventListener('scroll', queueWrappedMapRender, { passive: true })
+    scrollContainer.addEventListener('pointerdown', prepareWrappedMapsForScrollbar, {
+      passive: true,
+    })
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', queueWrappedMapRender)
+      scrollContainer.removeEventListener('pointerdown', prepareWrappedMapsForScrollbar)
+    }
+  }, [
+    mapScrollRef,
+    queueWrappedMapRender,
+    scheduleWrappedMapRender,
+  ])
+
+  useEffect(
+    () => () => {
+      if (wrappedRenderFrameRef.current !== null) {
+        cancelAnimationFrame(wrappedRenderFrameRef.current)
+        wrappedRenderFrameRef.current = null
+      }
+    },
+    [],
+  )
 
   return (
     <section
@@ -95,27 +334,21 @@ export function MapCanvas({
         ref={mapScrollRef}
       >
         <div className="grid min-h-full min-w-full place-items-center">
-          <div
-            className="flex min-h-px min-w-px"
-            style={viewport.mapTrackStyle}
-          >
+          <div className="flex min-h-px min-w-px" style={mapTrackStyle}>
             <WrappedMapTile
-              effectiveTool={effectiveTool}
+              activeTool={activeTool}
               canvasRef={leftWrappedCanvasRef}
-              canvasStyle={viewport.canvasStyle}
-              imageRendering={viewport.mapImageRendering}
+              canvasStyle={canvasStyle}
+              imageRendering={mapImageRendering}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
             />
-            <div
-              className="relative min-h-px min-w-px flex-none"
-              style={viewport.canvasStyle}
-            >
+            <div className="relative min-h-px min-w-px flex-none" style={canvasStyle}>
               <canvas
                 ref={baseCanvasRef}
                 className="absolute inset-0 block size-full cursor-crosshair touch-none [image-rendering:pixelated] data-[tool=hand]:cursor-grab data-[tool=hand]:active:cursor-grabbing"
-                data-tool={effectiveTool}
+                data-tool={activeTool}
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
@@ -128,7 +361,7 @@ export function MapCanvas({
                 aria-hidden="true"
               />
               <canvas
-                ref={countryLayerCanvasRef}
+                ref={sphereCanvasRef}
                 className="pointer-events-none absolute inset-0 z-2 block size-full [image-rendering:pixelated]"
                 aria-hidden="true"
               />
@@ -165,10 +398,10 @@ export function MapCanvas({
               />
             </div>
             <WrappedMapTile
-              effectiveTool={effectiveTool}
+              activeTool={activeTool}
               canvasRef={rightWrappedCanvasRef}
-              canvasStyle={viewport.canvasStyle}
-              imageRendering={viewport.mapImageRendering}
+              canvasStyle={canvasStyle}
+              imageRendering={mapImageRendering}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
@@ -214,25 +447,17 @@ export function MapCanvas({
       </MapControlGroup>
 
       <MapControlGroup label="확대 축소" position="right">
-        <button
-          type="button"
-          aria-label="확대"
-          onClick={() => viewport.updateZoom(viewport.zoomRef.current * 1.15)}
-        >
+        <button type="button" aria-label="확대" onClick={onZoomIn}>
           +
         </button>
-        <button
-          type="button"
-          aria-label="축소"
-          onClick={() => viewport.updateZoom(viewport.zoomRef.current / 1.15)}
-        >
+        <button type="button" aria-label="축소" onClick={onZoomOut}>
           -
         </button>
       </MapControlGroup>
 
       <MapToolbar
-        effectiveTool={effectiveTool}
-        onToolSelect={onToolSelect}
+        activeTool={activeTool}
+        onActiveToolChange={onActiveToolChange}
         onPaintModeChange={onPaintModeChange}
         onPaintUnitChange={onPaintUnitChange}
         paintMode={paintMode}

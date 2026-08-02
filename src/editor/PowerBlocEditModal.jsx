@@ -1,11 +1,6 @@
 import { useState } from 'react'
-import {
-  createCountryBlocIndex,
-  getAutomaticBlocMemberIds,
-  isEligiblePowerBlocLeader,
-} from '../map/worldRelations'
+import { createCountryBlocIndex, getAutomaticBlocMemberIds } from '../map/worldRelations'
 import { EditorModal } from './EditorModal'
-import { SelectAllButton } from './SelectAllButton'
 
 const EMPTY_BLOC = { name: '', leaderCountryId: '', memberCountryIds: [] }
 
@@ -15,10 +10,10 @@ export function PowerBlocEditModal({
   blocId = null,
   countries,
   countryOrder,
+  onApply,
   onClose,
   powerBlocs,
   powerRankTypes,
-  savePowerBloc,
 }) {
   const [draft, setDraft] = useState({ ...bloc, memberCountryIds: [...bloc.memberCountryIds] })
   const otherBlocs = Object.fromEntries(
@@ -28,7 +23,8 @@ export function PowerBlocEditModal({
   const eligibleLeaderIds = countryOrder.filter((countryId) => {
     const country = countries[countryId]
     return (
-      isEligiblePowerBlocLeader(country, autonomyTypes, powerRankTypes) &&
+      autonomyTypes[country?.autonomyTypeId]?.autonomy === 10 &&
+      powerRankTypes[country?.powerRankTypeId]?.level >= 7 &&
       !occupiedCountryIds.has(countryId)
     )
   })
@@ -47,8 +43,8 @@ export function PowerBlocEditModal({
     }))
   }
 
-  function submitPowerBloc() {
-    return savePowerBloc({
+  function applyChanges() {
+    return onApply({
       name: draft.name.trim(),
       leaderCountryId: draft.leaderCountryId,
       memberCountryIds: draft.memberCountryIds.filter(
@@ -60,42 +56,15 @@ export function PowerBlocEditModal({
     })
   }
 
-  function toggleAllMembers() {
-    const selectableCountryIds = countryOrder.filter(
-      (countryId) =>
-        countryId !== draft.leaderCountryId &&
-        !automaticMemberIds.has(countryId) &&
-        !occupiedCountryIds.has(countryId),
-    )
-    const shouldSelectAll = selectableCountryIds.some(
-      (countryId) => !draft.memberCountryIds.includes(countryId),
-    )
-
-    setDraft((currentDraft) => {
-      const selectableIds = new Set(selectableCountryIds)
-      const retainedMemberIds = currentDraft.memberCountryIds.filter(
-        (countryId) => !selectableIds.has(countryId),
-      )
-
-      return {
-        ...currentDraft,
-        memberCountryIds: shouldSelectAll
-          ? [...retainedMemberIds, ...selectableCountryIds]
-          : retainedMemberIds,
-      }
-    })
-  }
-
   return (
     <EditorModal
+      applyDisabled={isInvalid}
+      enableSelectAll
       labelledBy="power-bloc-edit-title"
+      onApply={applyChanges}
       onClose={onClose}
-      onSubmit={submitPowerBloc}
-      submitDisabled={isInvalid}
       title={blocId ? '세력 블록 편집' : '세력 블록 추가'}
     >
-      <SelectAllButton onToggle={toggleAllMembers} />
-
       <label>
         세력 블록 이름
         <input

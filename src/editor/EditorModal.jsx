@@ -1,42 +1,47 @@
-import { useState } from 'react'
-
-function ModalSaveAlert({ visible }) {
-  return visible ? (
-    <p
-      className="bg-[#edf6ef] text-[#245c32]"
-      role="status"
-    >
-      저장되었습니다.
-    </p>
-  ) : null
-}
+import { useRef, useState } from 'react'
+import { ModalSaveAlert } from './ModalSaveAlert'
 
 export function EditorModal({
-  submitDisabled = false,
-  submitLabel = '적용',
+  applyDisabled = false,
+  applyLabel = '적용',
   children,
-  closeOnSubmit = false,
+  closeOnApply = false,
+  enableSelectAll = false,
   labelledBy,
+  onApply,
   onClose,
-  onSubmit,
   showSaveAlert = true,
   title,
 }) {
   const [isSaved, setIsSaved] = useState(false)
+  const formRef = useRef(null)
 
   function handleSubmit(event) {
     event.preventDefault()
 
-    if (submitDisabled || onSubmit() === false) {
+    if (applyDisabled || onApply() === false) {
       return
     }
 
-    if (closeOnSubmit) {
+    if (closeOnApply) {
       onClose()
       return
     }
 
     setIsSaved(true)
+  }
+
+  function toggleAllCheckboxes() {
+    const checkboxes = [
+      ...formRef.current.querySelectorAll('input[type="checkbox"]:not(:disabled)'),
+    ]
+    const shouldSelect = checkboxes.some((checkbox) => !checkbox.checked)
+
+    for (const checkbox of checkboxes) {
+      if (checkbox.checked !== shouldSelect) {
+        checkbox.click()
+      }
+    }
   }
 
   return (
@@ -56,12 +61,13 @@ export function EditorModal({
           className="grid gap-3.5 [&_output]:min-h-8"
           onChange={() => setIsSaved(false)}
           onSubmit={handleSubmit}
+          ref={formRef}
         >
           <header className="flex items-center justify-between gap-2">
             <h2 id={labelledBy}>{title}</h2>
             <div className="flex items-center justify-between gap-2">
-              <button type="submit" disabled={submitDisabled}>
-                {submitLabel}
+              <button type="submit" disabled={applyDisabled}>
+                {applyLabel}
               </button>
               <button type="button" aria-label="닫기" onClick={onClose}>
                 ×
@@ -70,6 +76,15 @@ export function EditorModal({
           </header>
 
           {showSaveAlert ? <ModalSaveAlert visible={isSaved} /> : null}
+          {enableSelectAll ? (
+            <button
+              className="justify-self-end"
+              type="button"
+              onClick={toggleAllCheckboxes}
+            >
+              모두 선택/해제
+            </button>
+          ) : null}
           {children}
         </form>
       </section>

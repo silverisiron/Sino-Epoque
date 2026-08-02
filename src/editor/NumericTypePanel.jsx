@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2.mjs'
+import { Trash2 } from 'lucide-react'
 import { PanelSection } from './PanelSection'
 
 function NumericTypeRow({

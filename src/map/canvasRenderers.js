@@ -1,5 +1,5 @@
-import { hexToRgb } from './color'
-import { isWater } from './provinceData'
+import { hexToRgb, isWater } from './mapData'
+import { createCountryBlocIndex, getTopIndependentCountryId } from './worldRelations'
 
 function getRgbKey(data, index) {
   return (data[index] << 16) | (data[index + 1] << 8) | data[index + 2]
@@ -150,85 +150,6 @@ export function buildProvincePixelCache(sourceImageData, provinceByRgb) {
   return cache
 }
 
-function paintProvincePixels(
-  overlayImageData,
-  pixelCache,
-  province,
-  parsedColor,
-  opacity,
-) {
-  if (!province || isWater(province)) {
-    return null
-  }
-
-  const cacheEntry = pixelCache.get(province.id)
-
-  if (!cacheEntry) {
-    return null
-  }
-
-  const output = overlayImageData.data
-
-  for (const pixelIndex of cacheEntry.pixels) {
-    output[pixelIndex] = parsedColor?.red ?? 0
-    output[pixelIndex + 1] = parsedColor?.green ?? 0
-    output[pixelIndex + 2] = parsedColor?.blue ?? 0
-    output[pixelIndex + 3] = parsedColor ? Math.round(255 * opacity) : 0
-  }
-
-  return {
-    x: cacheEntry.minX,
-    y: cacheEntry.minY,
-    width: cacheEntry.maxX - cacheEntry.minX + 1,
-    height: cacheEntry.maxY - cacheEntry.minY + 1,
-  }
-}
-
-function mergeDirtyRegions(currentRegion, nextRegion) {
-  if (!currentRegion) {
-    return nextRegion
-  }
-
-  if (!nextRegion) {
-    return currentRegion
-  }
-
-  const minX = Math.min(currentRegion.x, nextRegion.x)
-  const minY = Math.min(currentRegion.y, nextRegion.y)
-  const maxX = Math.max(
-    currentRegion.x + currentRegion.width,
-    nextRegion.x + nextRegion.width,
-  )
-  const maxY = Math.max(
-    currentRegion.y + currentRegion.height,
-    nextRegion.y + nextRegion.height,
-  )
-
-  return {
-    x: minX,
-    y: minY,
-    width: maxX - minX,
-    height: maxY - minY,
-  }
-}
-
-function commitOverlayRegion(canvas, imageData, dirtyRegion) {
-  if (!dirtyRegion) {
-    return
-  }
-
-  const context = canvas.getContext('2d')
-  context.putImageData(
-    imageData,
-    0,
-    0,
-    dirtyRegion.x,
-    dirtyRegion.y,
-    dirtyRegion.width,
-    dirtyRegion.height,
-  )
-}
-
 export function drawProvinceOverlay(
   overlayCanvas,
   overlayImageData,
@@ -237,25 +158,36 @@ export function drawProvinceOverlay(
   color,
   opacity = 1,
 ) {
-  if (!overlayCanvas || !overlayImageData) {
-    return null
+  if (!overlayCanvas || !overlayImageData || !province || isWater(province)) {
+    return
   }
 
-  const parsedColor = color
-    ? typeof color === 'string'
-      ? hexToRgb(color)
-      : color
-    : null
-  const dirtyRegion = paintProvincePixels(
-    overlayImageData,
-    pixelCache,
-    province,
-    parsedColor,
-    opacity,
-  )
+  const context = overlayCanvas.getContext('2d')
+  const cacheEntry = pixelCache.get(province.id)
 
-  commitOverlayRegion(overlayCanvas, overlayImageData, dirtyRegion)
-  return dirtyRegion
+  if (!cacheEntry) {
+    return
+  }
+
+  const output = overlayImageData.data
+  const parsedColor = color ? (typeof color === 'string' ? hexToRgb(color) : color) : null
+
+  for (const pixelIndex of cacheEntry.pixels) {
+    output[pixelIndex] = parsedColor?.red ?? 0
+    output[pixelIndex + 1] = parsedColor?.green ?? 0
+    output[pixelIndex + 2] = parsedColor?.blue ?? 0
+    output[pixelIndex + 3] = parsedColor ? Math.round(255 * opacity) : 0
+  }
+
+  context.putImageData(
+    overlayImageData,
+    0,
+    0,
+    cacheEntry.minX,
+    cacheEntry.minY,
+    cacheEntry.maxX - cacheEntry.minX + 1,
+    cacheEntry.maxY - cacheEntry.minY + 1,
+  )
 }
 
 export function drawProvincesOverlay(
@@ -266,42 +198,147 @@ export function drawProvincesOverlay(
   color,
   opacity = 1,
 ) {
-  if (!overlayCanvas || !overlayImageData) {
+  for (const province of provinces) {
+    drawProvinceOverlay(overlayCanvas, overlayImageData, pixelCache, province, color, opacity)
+  }
+}
+
+function blendHexWithWhite(color, opacity) {
+  const rgb = hexToRgb(color)
+  const ratio = opacity / 100
+
+  return {
+    red: Math.round(255 + (rgb.red - 255) * ratio),
+    green: Math.round(255 + (rgb.green - 255) * ratio),
+    blue: Math.round(255 + (rgb.blue - 255) * ratio),
+  }
+}
+
+export function getSphereLayerAppearance(
+  countryId,
+  countries,
+  autonomyTypes,
+  powerRankTypes,
+  powerBlocs,
+  settings,
+  providedBlocIndex,
+) {
+  const country = countries[countryId]
+
+  if (!country) {
     return null
   }
 
-  const parsedColor = color
-    ? typeof color === 'string'
-      ? hexToRgb(color)
-      : color
-    : null
-  let dirtyRegion = null
+  const mode = settings.mode ?? 'autonomy'
+  const selectedIds = settings.selectedIdsByMode?.[mode] ?? settings.selectedTypeIds ?? []
+  const opacityById = settings.opacityByIdByMode?.[mode] ?? settings.opacityByType ?? {}
+  let itemId
+  let sourceCountry
+  let defaultOpacity = 90
 
-  for (const province of provinces) {
-    dirtyRegion = mergeDirtyRegions(
-      dirtyRegion,
-      paintProvincePixels(
-        overlayImageData,
-        pixelCache,
-        province,
-        parsedColor,
-        opacity,
-      ),
-    )
+  if (mode === 'powerRank') {
+    itemId = country.powerRankTypeId
+    sourceCountry = country
+    defaultOpacity = (powerRankTypes[itemId]?.level ?? 1) * 10
+  } else if (mode === 'powerBloc') {
+    const blocIndex =
+      providedBlocIndex ?? createCountryBlocIndex(powerBlocs, countries, autonomyTypes)
+    itemId = blocIndex.get(countryId)
+    sourceCountry = itemId ? countries[powerBlocs[itemId]?.leaderCountryId] : null
+  } else {
+    const autonomyType = autonomyTypes[country.autonomyTypeId]
+
+    if (!autonomyType || autonomyType.autonomy === 10) {
+      return null
+    }
+
+    itemId = country.autonomyTypeId
+    const topCountryId = getTopIndependentCountryId(countryId, countries, autonomyTypes)
+    sourceCountry = topCountryId ? countries[topCountryId] : null
   }
 
-  commitOverlayRegion(overlayCanvas, overlayImageData, dirtyRegion)
-  return dirtyRegion
+  if (!itemId || !sourceCountry || !selectedIds.includes(itemId)) {
+    return null
+  }
+
+  const opacity = Math.min(100, Math.max(0, Number(opacityById[itemId] ?? defaultOpacity)))
+
+  return { color: blendHexWithWhite(sourceCountry.color, opacity), opacity: 1 }
 }
 
-export function drawProvinceAssignments(
-  overlayCanvas,
-  overlayImageData,
+export function drawSphereLayer(
+  sphereCanvas,
+  sphereImageData,
   pixelCache,
-  provinceById,
-  provinceAssignments,
+  assignments,
   countries,
+  autonomyTypes,
+  powerRankTypes,
+  powerBlocs,
+  settings,
 ) {
+  if (!sphereCanvas || !sphereImageData) {
+    return
+  }
+
+  const context = sphereCanvas.getContext('2d')
+  const output = sphereImageData.data
+  const appearanceByCountry = new Map()
+  const blocIndex =
+    settings.mode === 'powerBloc'
+      ? createCountryBlocIndex(powerBlocs, countries, autonomyTypes)
+      : null
+  output.fill(0)
+
+  const selectedIds =
+    settings.selectedIdsByMode?.[settings.mode] ?? settings.selectedTypeIds ?? []
+
+  if (selectedIds.length === 0) {
+    context.clearRect(0, 0, sphereCanvas.width, sphereCanvas.height)
+    return
+  }
+
+  for (const [provinceId, countryId] of Object.entries(assignments)) {
+    if (!appearanceByCountry.has(countryId)) {
+      const appearance = getSphereLayerAppearance(
+        countryId,
+        countries,
+        autonomyTypes,
+        powerRankTypes,
+        powerBlocs,
+        settings,
+        blocIndex,
+      )
+      appearanceByCountry.set(
+        countryId,
+        appearance
+          ? {
+              color: appearance.color,
+              alpha: 255,
+            }
+          : null,
+      )
+    }
+
+    const appearance = appearanceByCountry.get(countryId)
+    const cacheEntry = pixelCache.get(provinceId)
+
+    if (!appearance || !cacheEntry) {
+      continue
+    }
+
+    for (const pixelIndex of cacheEntry.pixels) {
+      output[pixelIndex] = appearance.color.red
+      output[pixelIndex + 1] = appearance.color.green
+      output[pixelIndex + 2] = appearance.color.blue
+      output[pixelIndex + 3] = appearance.alpha
+    }
+  }
+
+  context.putImageData(sphereImageData, 0, 0)
+}
+
+export function drawAllOverlay(overlayCanvas, overlayImageData, pixelCache, provinceById, assignments, countries) {
   if (!overlayCanvas || !overlayImageData) {
     return
   }
@@ -311,7 +348,7 @@ export function drawProvinceAssignments(
   overlayImageData.data.fill(0)
   context.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height)
 
-  for (const [provinceId, countryId] of Object.entries(provinceAssignments)) {
+  for (const [provinceId, countryId] of Object.entries(assignments)) {
     const country = countries[countryId]
 
     if (!country) {
@@ -319,14 +356,6 @@ export function drawProvinceAssignments(
     }
 
     const province = provinceById.get(provinceId)
-    paintProvincePixels(
-      overlayImageData,
-      pixelCache,
-      province,
-      hexToRgb(country.color),
-      1,
-    )
+    drawProvinceOverlay(overlayCanvas, overlayImageData, pixelCache, province, country.color)
   }
-
-  context.putImageData(overlayImageData, 0, 0)
 }

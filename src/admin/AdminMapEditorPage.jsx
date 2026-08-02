@@ -1,22 +1,18 @@
-import { useRef, useState } from 'react'
-import { CountryLayerModal } from '../editor/CountryLayerModal'
+import { useEffect, useState } from 'react'
 import { CountryPanel } from '../editor/CountryPanel'
+import { DataManagerPanel } from '../editor/DataManagerPanel'
 import { MapCanvas } from '../editor/MapCanvas'
 import { MapDisplayPanel } from '../editor/MapDisplayPanel'
 import { MapEditorPanel } from '../editor/MapEditorPanel'
-import { MapExportPanel } from '../editor/MapExportPanel'
-import { NumericTypePanel } from '../editor/NumericTypePanel'
-import { PowerBlocPanel } from '../editor/PowerBlocPanel'
 import { PresetLoader } from '../editor/PresetLoader'
 import { ProvinceInfo } from '../editor/ProvinceInfo'
+import { SphereLayerModal } from '../editor/SphereLayerModal'
 import { useMapEditor } from '../editor/useMapEditor'
-import { downloadRenderedMapPng } from '../map/exportMapImage'
 import { useMapData } from '../map/useMapData'
-import { useMapEditorShortcuts } from './useMapEditorShortcuts'
+import { useMapViewport } from '../map/useMapViewport'
 
 export function AdminMapEditorPage() {
-  const mapScrollRef = useRef(null)
-  const [workspaceMode, setWorkspaceMode] = useState('editor')
+  const [page, setPage] = useState('editor')
   const [borderMode, setBorderMode] = useState('state')
   const [rasterLayers, setRasterLayers] = useState({
     heightmap: false,
@@ -24,32 +20,32 @@ export function AdminMapEditorPage() {
   })
   const [isLeftPanelExpanded, setIsLeftPanelExpanded] = useState(true)
   const [isRightPanelExpanded, setIsRightPanelExpanded] = useState(true)
-  const [isCountryLayerModalOpen, setIsCountryLayerModalOpen] = useState(false)
+  const [isSphereLayerModalOpen, setIsSphereLayerModalOpen] = useState(false)
   const mapData = useMapData(borderMode)
+  const viewport = useMapViewport(mapData.mapSize)
   const editor = useMapEditor({
-    mapRenderer: mapData.renderer,
+    activePage: page,
     mapSize: mapData.mapSize,
-    mapScrollRef,
+    mapScrollRef: viewport.mapScrollRef,
+    overlayCanvasRef: mapData.overlayCanvasRef,
+    overlayImageDataRef: mapData.overlayImageDataRef,
     provinceByRgbRef: mapData.provinceByRgbRef,
+    provincePixelCacheRef: mapData.provincePixelCacheRef,
+    redrawAllOverlay: mapData.redrawAllOverlay,
+    redrawSphereLayer: mapData.redrawSphereLayer,
     selectedPresetPath: mapData.selectedPresetPath,
+    setActivePage: setPage,
     setStatus: mapData.setStatus,
-    setWorkspaceMode,
     sourceImageDataRef: mapData.sourceImageDataRef,
+    sphereCanvasRef: mapData.sphereCanvasRef,
+    sphereImageDataRef: mapData.sphereImageDataRef,
     stateByProvinceRef: mapData.stateByProvinceRef,
     statesByIdRef: mapData.statesByIdRef,
-    workspaceMode,
+    syncWrappedMap: mapData.syncWrappedMap,
   })
-  const { redo, selectTool, setTemporaryPanActive, undo } = editor
-  useMapEditorShortcuts({
-    workspaceMode,
-    redo,
-    undo,
-    selectTool,
-    setTemporaryPanActive,
-  })
-  const countryLayerActive =
-    editor.countryLayerSettings.selectedIdsByMode[editor.countryLayerSettings.mode]
-      ?.length > 0
+  const { redo, undo } = editor
+  const sphereLayerActive =
+    editor.sphereLayerSettings.selectedIdsByMode[editor.sphereLayerSettings.mode]?.length > 0
 
   function handleRasterLayerChange(layerId, isVisible) {
     setRasterLayers((currentLayers) => ({
@@ -58,21 +54,35 @@ export function AdminMapEditorPage() {
     }))
   }
 
-  async function handleExportPng() {
-    try {
-      await downloadRenderedMapPng({
-        baseCanvas: mapData.baseCanvasRef.current,
-        borderCanvas: mapData.borderCanvasRef.current,
-        heightmapVisible: rasterLayers.heightmap,
-        overlayCanvas: mapData.overlayCanvasRef.current,
-        riversVisible: rasterLayers.rivers,
-        countryLayerCanvas: mapData.countryLayerCanvasRef.current,
-      })
-      mapData.setStatus('원본 해상도 PNG가 저장되었습니다.')
-    } catch (error) {
-      mapData.setStatus(error.message || 'PNG 저장에 실패했습니다.')
+  useEffect(() => {
+    function handleHistoryShortcut(event) {
+      const target = event.target
+
+      if (
+        event.defaultPrevented ||
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target?.isContentEditable ||
+        (!event.ctrlKey && !event.metaKey)
+      ) {
+        return
+      }
+
+      const key = event.key.toLowerCase()
+
+      if (key === 'z' && !event.shiftKey) {
+        event.preventDefault()
+        undo()
+      } else if (key === 'y' || (key === 'z' && event.shiftKey)) {
+        event.preventDefault()
+        redo()
+      }
     }
-  }
+
+    window.addEventListener('keydown', handleHistoryShortcut)
+    return () => window.removeEventListener('keydown', handleHistoryShortcut)
+  }, [redo, undo])
 
   return (
     <main
@@ -85,24 +95,12 @@ export function AdminMapEditorPage() {
             <p>{mapData.status}</p>
           </div>
           <ul className="flex gap-3 col">
-            <li>
-              <button
-                type="button"
-                aria-pressed={workspaceMode === 'editor'}
-                onClick={() => setWorkspaceMode('editor')}
-              >
-                지도 편집기
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
-                aria-pressed={workspaceMode === 'loader'}
-                onClick={() => setWorkspaceMode('loader')}
-              >
-                프리셋 불러오기
-              </button>
-            </li>
+            <li><button type="button" aria-pressed={page === 'editor'} onClick={() => setPage('editor')}>
+            지도 편집기
+          </button></li>
+            <li><button type="button" aria-pressed={page === 'loader'} onClick={() => setPage('loader')}>
+            프리셋 불러오기
+          </button></li>
           </ul>
         </nav>
       </header>
@@ -113,71 +111,42 @@ export function AdminMapEditorPage() {
         onToggle={() => setIsLeftPanelExpanded((isExpanded) => !isExpanded)}
         side="left"
       >
-        {workspaceMode === 'editor' ? (
-          <>
-            <NumericTypePanel
-              heading="Autonomy Types"
-              headingId="autonomy-types-title"
-              isInUse={(typeId) =>
-                Object.keys(editor.autonomyTypes).length <= 1 ||
-                Object.values(editor.countries).some(
-                  (country) => country.autonomyTypeId === typeId,
-                )
-              }
-              onAdd={editor.addAutonomyType}
-              onDelete={editor.deleteAutonomyType}
-              onDeleteSelected={editor.deleteAutonomyTypes}
-              onUpdate={editor.updateAutonomyType}
-              types={editor.autonomyTypes}
-              valueKey="autonomy"
-              valueLabel="자치도 유형"
-            />
-
-            <NumericTypePanel
-              heading="Power Ranks"
-              headingId="power-ranks-title"
-              isInUse={(typeId) =>
-                Object.keys(editor.powerRankTypes).length <= 1 ||
-                Object.values(editor.countries).some(
-                  (country) => country.powerRankTypeId === typeId,
-                )
-              }
-              onAdd={editor.addPowerRankType}
-              onDelete={editor.deletePowerRankType}
-              onDeleteSelected={editor.deletePowerRankTypes}
-              onUpdate={editor.updatePowerRankType}
-              types={editor.powerRankTypes}
-              valueKey="level"
-              valueLabel="국가 등급"
-            />
-
-            <PowerBlocPanel
-              addPowerBloc={editor.addPowerBloc}
-              autonomyTypes={editor.autonomyTypes}
-              countries={editor.countries}
-              countryOrder={editor.countryOrder}
-              deletePowerBloc={editor.deletePowerBloc}
-              deletePowerBlocs={editor.deletePowerBlocs}
-              powerBlocs={editor.powerBlocs}
-              powerRankTypes={editor.powerRankTypes}
-              updatePowerBloc={editor.updatePowerBloc}
-            />
-          </>
+        {page === 'editor' ? (
+          <DataManagerPanel
+            autonomyTypes={editor.autonomyTypes}
+            countries={editor.countries}
+            countryOrder={editor.countryOrder}
+            onAddAutonomyType={editor.addAutonomyType}
+            onAddPowerBloc={editor.addPowerBloc}
+            onAddPowerRankType={editor.addPowerRankType}
+            onAutonomyTypeDelete={editor.deleteAutonomyType}
+            onAutonomyTypesDelete={editor.deleteAutonomyTypes}
+            onAutonomyTypeUpdate={editor.updateAutonomyType}
+            onPowerBlocDelete={editor.deletePowerBloc}
+            onPowerBlocsDelete={editor.deletePowerBlocs}
+            onPowerBlocUpdate={editor.updatePowerBloc}
+            onPowerRankTypeDelete={editor.deletePowerRankType}
+            onPowerRankTypesDelete={editor.deletePowerRankTypes}
+            onPowerRankTypeUpdate={editor.updatePowerRankType}
+            powerBlocs={editor.powerBlocs}
+            powerRankTypes={editor.powerRankTypes}
+          />
         ) : null}
       </MapEditorPanel>
 
       <MapCanvas
-        effectiveTool={editor.effectiveTool}
+        activeTool={editor.activeTool}
         baseCanvasRef={mapData.baseCanvasRef}
         borderCanvasRef={mapData.borderCanvasRef}
+        canvasStyle={viewport.canvasStyle}
         canRedo={editor.canRedo}
         canUndo={editor.canUndo}
         isMapRendering={mapData.isMapRendering}
-        countryLayerCanvasRef={mapData.countryLayerCanvasRef}
-        wrappedMapInvalidationRef={mapData.wrappedMapInvalidationRef}
-        mapScrollRef={mapScrollRef}
-        mapSize={mapData.mapSize}
-        onToolSelect={selectTool}
+        mapImageRendering={viewport.mapImageRendering}
+        mapRenderSyncRef={mapData.mapRenderSyncRef}
+        mapScrollRef={viewport.mapScrollRef}
+        mapTrackStyle={viewport.mapTrackStyle}
+        onActiveToolChange={editor.setActiveTool}
         onPaintModeChange={editor.setPaintMode}
         onPaintUnitChange={editor.setPaintUnit}
         onPointerDown={editor.handlePointerDown}
@@ -185,10 +154,13 @@ export function AdminMapEditorPage() {
         onPointerUp={editor.handlePointerUp}
         onRedo={editor.redo}
         onUndo={editor.undo}
+        onZoomIn={() => viewport.updateZoom(viewport.zoomRef.current * 1.15)}
+        onZoomOut={() => viewport.updateZoom(viewport.zoomRef.current / 1.15)}
         overlayCanvasRef={mapData.overlayCanvasRef}
         paintMode={editor.paintMode}
         paintUnit={editor.paintUnit}
         rasterLayers={rasterLayers}
+        sphereCanvasRef={mapData.sphereCanvasRef}
       />
 
       <MapEditorPanel
@@ -197,32 +169,28 @@ export function AdminMapEditorPage() {
         onToggle={() => setIsRightPanelExpanded((isExpanded) => !isExpanded)}
         side="right"
       >
-        {workspaceMode === 'editor' ? (
+        {page === 'editor' ? (
           <>
             <MapDisplayPanel
               borderMode={borderMode}
               onBorderModeChange={setBorderMode}
-              countryLayerActive={countryLayerActive}
-              onOpenCountryLayer={() => setIsCountryLayerModalOpen(true)}
+              onOpenSphereLayer={() => setIsSphereLayerModalOpen(true)}
               onRasterLayerChange={handleRasterLayerChange}
               rasterLayers={rasterLayers}
+              sphereLayerActive={sphereLayerActive}
             />
             <CountryPanel
               activeCountryId={editor.activeCountryId}
-              addCountry={editor.addCountry}
               autonomyTypes={editor.autonomyTypes}
-              countries={editor.countries}
-              countryOrder={editor.countryOrder}
-              deleteCountry={editor.deleteCountry}
+            countries={editor.countries}
+            countryOrder={editor.countryOrder}
+            onAddCountry={editor.addCountry}
+            onCountryDelete={editor.deleteCountry}
+            onCountryOrderChange={editor.reorderCountries}
+              onCountryUpdate={editor.updateCountry}
+              onSelectCountry={editor.setActiveCountryId}
               powerBlocs={editor.powerBlocs}
               powerRankTypes={editor.powerRankTypes}
-              reorderCountries={editor.reorderCountries}
-              selectCountry={editor.selectCountry}
-              updateCountry={editor.updateCountry}
-            />
-            <MapExportPanel
-              exportPng={handleExportPng}
-              pngExportDisabled={!mapData.mapSize || mapData.isMapRendering}
               preset={editor.preset}
             />
           </>
@@ -236,23 +204,23 @@ export function AdminMapEditorPage() {
         )}
 
         <ProvinceInfo
-          isEditor={workspaceMode === 'editor'}
-          onUnassignSelectedArea={editor.unassignSelectedArea}
+          isEditor={page === 'editor'}
+          onRemoveAssignment={editor.removeAssignment}
           selectedCountry={editor.selectedCountry}
-          selectedProvinceHit={editor.selectedProvinceHit}
+          selectedProvince={editor.selectedProvince}
           selectedState={editor.selectedState}
         />
       </MapEditorPanel>
 
-      {isCountryLayerModalOpen ? (
-        <CountryLayerModal
+      {isSphereLayerModalOpen ? (
+        <SphereLayerModal
           autonomyTypes={editor.autonomyTypes}
           countries={editor.countries}
-          onClose={() => setIsCountryLayerModalOpen(false)}
+          onApply={editor.applySphereLayerSettings}
+          onClose={() => setIsSphereLayerModalOpen(false)}
           powerBlocs={editor.powerBlocs}
           powerRankTypes={editor.powerRankTypes}
-          settings={editor.countryLayerSettings}
-          updateCountryLayerSettings={editor.updateCountryLayerSettings}
+          settings={editor.sphereLayerSettings}
         />
       ) : null}
     </main>

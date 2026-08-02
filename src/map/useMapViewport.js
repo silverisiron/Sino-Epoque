@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { clampZoom } from './mapData'
+import { useWrappedHorizontalScroll } from './useWrappedHorizontalScroll'
 
 const WHEEL_ZOOM_SENSITIVITY = 0.001
 const MAX_ZOOM = 8
@@ -7,8 +7,11 @@ const MOBILE_MAX_ZOOM = 2
 const MOBILE_QUERY = '(max-width: 56.249rem)'
 const WRAPPED_MAP_COUNT = 3
 
-export function useMapViewport(mapSize) {
-  const mapScrollRef = useRef(null)
+function clampZoom(value, minimum, maximum) {
+  return Math.min(Math.max(minimum, maximum), Math.max(minimum, value))
+}
+
+export function useMapViewport(mapSize, mapScrollRef) {
   const mapSizeRef = useRef(mapSize)
   const maxZoomRef = useRef(MAX_ZOOM)
   const minZoomRef = useRef(0)
@@ -65,7 +68,7 @@ export function useMapViewport(mapSize) {
       scrollContainer.scrollLeft = nextMapWidth + mapX * clampedZoom - anchorX
       scrollContainer.scrollTop = mapY * clampedZoom - anchorY
     })
-  }, [])
+  }, [mapScrollRef])
 
   useEffect(() => {
     const scrollContainer = mapScrollRef.current
@@ -91,7 +94,7 @@ export function useMapViewport(mapSize) {
     resizeObserver.observe(scrollContainer)
 
     return () => resizeObserver.disconnect()
-  }, [updateZoom])
+  }, [mapScrollRef, updateZoom])
 
   useEffect(() => {
     if (!minZoom) {
@@ -106,6 +109,14 @@ export function useMapViewport(mapSize) {
     zoomRef.current = nextZoom
     setZoom(nextZoom)
   }, [minZoom])
+
+  useWrappedHorizontalScroll({
+    mapScrollRef,
+    mapSize,
+    mapSizeRef,
+    zoom,
+    zoomRef,
+  })
 
   useEffect(() => {
     const scrollContainer = mapScrollRef.current
@@ -249,7 +260,7 @@ export function useMapViewport(mapSize) {
       wheelDeltaRef.current = 0
       wheelAnchorRef.current = null
     }
-  }, [updateZoom])
+  }, [mapScrollRef, updateZoom])
 
   const canvasStyle = useMemo(
     () =>

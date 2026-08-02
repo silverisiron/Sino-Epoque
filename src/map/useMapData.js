@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   buildProvincePixelCache,
-  createBorderImageData,
-  drawAllOverlay,
   drawBlankMap,
-  drawSphereLayer,
 } from './canvasRenderers'
 import {
   DEFINITION_PATH,
@@ -12,18 +9,25 @@ import {
   PRESET_INDEX_PATH,
   STATES_INDEX_PATH,
 } from './constants'
-import { parseDefinitionCsv, waitForPaint } from './mapData'
+import { parseDefinitionCsv } from './provinceData'
+import { useMapBorderRenderer } from './useMapBorderRenderer'
+import { useMapRenderer } from './useMapRenderer'
+
+function waitForPaint() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(resolve)
+  })
+}
 
 export function useMapData(borderMode) {
   const baseCanvasRef = useRef(null)
   const overlayCanvasRef = useRef(null)
-  const sphereCanvasRef = useRef(null)
+  const countryLayerCanvasRef = useRef(null)
   const borderCanvasRef = useRef(null)
-  const borderImageDataCacheRef = useRef(new Map())
-  const mapRenderSyncRef = useRef(null)
+  const wrappedMapInvalidationRef = useRef(null)
   const sourceImageDataRef = useRef(null)
   const overlayImageDataRef = useRef(null)
-  const sphereImageDataRef = useRef(null)
+  const countryLayerImageDataRef = useRef(null)
   const provinceByRgbRef = useRef(new Map())
   const provinceByIdRef = useRef(new Map())
   const provincePixelCacheRef = useRef(new Map())
@@ -36,43 +40,18 @@ export function useMapData(borderMode) {
   const [presetIndex, setPresetIndex] = useState([])
   const [selectedPresetPath, setSelectedPresetPath] = useState('')
 
-  const syncWrappedMap = useCallback((dirtyRegion) => {
-    mapRenderSyncRef.current?.(dirtyRegion)
+  const invalidateWrappedMap = useCallback((dirtyRegion) => {
+    wrappedMapInvalidationRef.current?.(dirtyRegion)
   }, [])
-
-  const redrawAllOverlay = useCallback((assignments, countries) => {
-    drawAllOverlay(
-      overlayCanvasRef.current,
-      overlayImageDataRef.current,
-      provincePixelCacheRef.current,
-      provinceByIdRef.current,
-      assignments,
-      countries,
-    )
-    syncWrappedMap()
-  }, [syncWrappedMap])
-
-  const redrawSphereLayer = useCallback((
-    assignments,
-    countries,
-    autonomyTypes,
-    powerRankTypes,
-    powerBlocs,
-    settings,
-  ) => {
-    drawSphereLayer(
-      sphereCanvasRef.current,
-      sphereImageDataRef.current,
-      provincePixelCacheRef.current,
-      assignments,
-      countries,
-      autonomyTypes,
-      powerRankTypes,
-      powerBlocs,
-      settings,
-    )
-    syncWrappedMap()
-  }, [syncWrappedMap])
+  const renderer = useMapRenderer({
+    countryLayerCanvasRef,
+    countryLayerImageDataRef,
+    overlayCanvasRef,
+    overlayImageDataRef,
+    provinceByIdRef,
+    provincePixelCacheRef,
+    invalidateWrappedMap,
+  })
 
   useEffect(() => {
     let ignore = false
@@ -128,7 +107,7 @@ export function useMapData(borderMode) {
 
         const baseCanvas = baseCanvasRef.current
         const overlayCanvas = overlayCanvasRef.current
-        const sphereCanvas = sphereCanvasRef.current
+        const countryLayerCanvas = countryLayerCanvasRef.current
         const borderCanvas = borderCanvasRef.current
         const baseContext = baseCanvas.getContext('2d', { willReadFrequently: true })
 
@@ -136,23 +115,25 @@ export function useMapData(borderMode) {
         baseCanvas.height = image.naturalHeight
         overlayCanvas.width = image.naturalWidth
         overlayCanvas.height = image.naturalHeight
-        sphereCanvas.width = image.naturalWidth
-        sphereCanvas.height = image.naturalHeight
+        countryLayerCanvas.width = image.naturalWidth
+        countryLayerCanvas.height = image.naturalHeight
         borderCanvas.width = image.naturalWidth
         borderCanvas.height = image.naturalHeight
-        borderImageDataCacheRef.current.clear()
 
         baseContext.drawImage(image, 0, 0)
 
         const sourceImageData = baseContext.getImageData(0, 0, baseCanvas.width, baseCanvas.height)
         sourceImageDataRef.current = sourceImageData
         overlayImageDataRef.current = new ImageData(baseCanvas.width, baseCanvas.height)
-        sphereImageDataRef.current = new ImageData(baseCanvas.width, baseCanvas.height)
+        countryLayerImageDataRef.current = new ImageData(
+          baseCanvas.width,
+          baseCanvas.height,
+        )
         provincePixelCacheRef.current = buildProvincePixelCache(sourceImageData, provinceByRgb)
 
         await waitForPaint()
         drawBlankMap(baseCanvas, sourceImageData, provinceByRgb)
-        syncWrappedMap()
+        invalidateWrappedMap()
 
         setMapSize({ width: baseCanvas.width, height: baseCanvas.height })
         setStatus('지도 로드 완료')
@@ -169,81 +150,34 @@ export function useMapData(borderMode) {
     return () => {
       ignore = true
     }
-  }, [syncWrappedMap])
+  }, [invalidateWrappedMap])
 
-  useEffect(() => {
-    let ignore = false
-
-    async function renderBorderMode() {
-      if (!mapSize || !sourceImageDataRef.current) {
-        return
-      }
-
-      const borderCanvas = borderCanvasRef.current
-      const borderContext = borderCanvas.getContext('2d')
-
-      if (borderMode === 'none') {
-        borderContext.clearRect(0, 0, borderCanvas.width, borderCanvas.height)
-        syncWrappedMap()
-        setIsMapRendering(false)
-        return
-      }
-
-      const cachedBorder = borderImageDataCacheRef.current.get(borderMode)
-
-      if (cachedBorder) {
-        borderContext.putImageData(cachedBorder, 0, 0)
-        syncWrappedMap()
-        setIsMapRendering(false)
-        return
-      }
-
-      setIsMapRendering(true)
-      await waitForPaint()
-
-      if (ignore) {
-        return
-      }
-
-      const borderImageData = createBorderImageData(
-        sourceImageDataRef.current,
-        provinceByRgbRef.current,
-        stateByProvinceRef.current,
-        borderMode,
-      )
-      borderImageDataCacheRef.current.set(borderMode, borderImageData)
-      borderContext.putImageData(borderImageData, 0, 0)
-      syncWrappedMap()
-      setIsMapRendering(false)
-    }
-
-    renderBorderMode()
-
-    return () => {
-      ignore = true
-    }
-  }, [borderMode, mapSize, syncWrappedMap])
+  useMapBorderRenderer({
+    borderCanvasRef,
+    borderMode,
+    invalidateWrappedMap,
+    mapSize,
+    provinceByRgbRef,
+    setIsMapRendering,
+    sourceImageDataRef,
+    stateByProvinceRef,
+  })
 
   return {
     baseCanvasRef,
     borderCanvasRef,
+    countryLayerCanvasRef,
     isMapRendering,
-    mapRenderSyncRef,
+    wrappedMapInvalidationRef,
     mapSize,
     overlayCanvasRef,
-    overlayImageDataRef,
     presetIndex,
-    provinceByIdRef,
     provinceByRgbRef,
-    provincePixelCacheRef,
-    redrawAllOverlay,
-    redrawSphereLayer,
+    renderer,
     selectedPresetPath,
     setSelectedPresetPath,
     setStatus,
     sourceImageDataRef,
-    sphereCanvasRef,
-    sphereImageDataRef,
     stateByProvinceRef,
     statesByIdRef,
     status,

@@ -14,7 +14,7 @@ export function MapDisplayPanel({
 }) {
   return (
     <PanelSection
-      className={cn("grid gap-2.5"), className}
+      className={cn("grid gap-2.5", className)}
       headingId="map-display-title"
       title="지도 레이어 설정"
     >

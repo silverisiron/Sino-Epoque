@@ -10,6 +10,7 @@ export function CountryEditModal({
   countryOrder,
   deleteCountry,
   onClose,
+  onDelete,
   powerRankTypes,
   updateCountry,
 }) {

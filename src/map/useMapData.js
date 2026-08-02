@@ -181,5 +181,6 @@ export function useMapData(borderMode) {
     stateByProvinceRef,
     statesByIdRef,
     status,
+    syncWrappedMap,
   }
 }

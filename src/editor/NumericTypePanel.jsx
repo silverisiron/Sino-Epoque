@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react'
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2.mjs'
 import { useState } from 'react'
 import { PanelSection } from './PanelSection'
 

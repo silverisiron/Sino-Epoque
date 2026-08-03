@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { clampZoom } from './mapData'
+import { useWrappedHorizontalScroll } from './useWrappedHorizontalScroll'
 
 const WHEEL_ZOOM_SENSITIVITY = 0.001
 const MAX_ZOOM = 8
@@ -7,8 +7,11 @@ const MOBILE_MAX_ZOOM = 2
 const MOBILE_QUERY = '(max-width: 56.249rem)'
 const WRAPPED_MAP_COUNT = 3
 
-export function useMapViewport(mapSize) {
-  const mapScrollRef = useRef(null)
+function clampZoom(value, minimum, maximum) {
+  return Math.min(Math.max(minimum, maximum), Math.max(minimum, value))
+}
+
+export function useMapViewport(mapSize, mapScrollRef) {
   const mapSizeRef = useRef(mapSize)
   const maxZoomRef = useRef(MAX_ZOOM)
   const minZoomRef = useRef(0)
@@ -17,8 +20,6 @@ export function useMapViewport(mapSize) {
   const wheelAnchorRef = useRef(null)
   const wheelFrameRef = useRef(null)
   const hasInitializedZoomRef = useRef(false)
-  const hasInitializedHorizontalScrollRef = useRef(false)
-  const isHorizontalScrollbarDraggingRef = useRef(false)
   const [zoom, setZoom] = useState(0)
   const [viewportSize, setViewportSize] = useState(null)
 
@@ -65,7 +66,7 @@ export function useMapViewport(mapSize) {
       scrollContainer.scrollLeft = nextMapWidth + mapX * clampedZoom - anchorX
       scrollContainer.scrollTop = mapY * clampedZoom - anchorY
     })
-  }, [])
+  }, [mapScrollRef])
 
   useEffect(() => {
     const scrollContainer = mapScrollRef.current
@@ -91,7 +92,7 @@ export function useMapViewport(mapSize) {
     resizeObserver.observe(scrollContainer)
 
     return () => resizeObserver.disconnect()
-  }, [updateZoom])
+  }, [mapScrollRef, updateZoom])
 
   useEffect(() => {
     if (!minZoom) {
@@ -107,107 +108,13 @@ export function useMapViewport(mapSize) {
     setZoom(nextZoom)
   }, [minZoom])
 
-  useEffect(() => {
-    const scrollContainer = mapScrollRef.current
-
-    if (
-      !scrollContainer ||
-      !mapSize ||
-      !zoom ||
-      hasInitializedHorizontalScrollRef.current
-    ) {
-      return
-    }
-
-    hasInitializedHorizontalScrollRef.current = true
-
-    requestAnimationFrame(() => {
-      scrollContainer.scrollLeft = mapSize.width * zoom
-    })
-  }, [mapSize, zoom])
-
-  useEffect(() => {
-    const scrollContainer = mapScrollRef.current
-
-    if (!scrollContainer) {
-      return undefined
-    }
-
-    function keepMiddleMapInView() {
-      const currentMapSize = mapSizeRef.current
-      const currentZoom = zoomRef.current
-
-      if (
-        !currentMapSize ||
-        !currentZoom ||
-        isHorizontalScrollbarDraggingRef.current
-      ) {
-        return
-      }
-
-      const mapWidth = currentMapSize.width * currentZoom
-      const scrollLeft = scrollContainer.scrollLeft
-      let nextScrollLeft = scrollLeft
-
-      while (nextScrollLeft < mapWidth * 0.5) {
-        nextScrollLeft += mapWidth
-      }
-
-      while (nextScrollLeft > mapWidth * 1.5) {
-        nextScrollLeft -= mapWidth
-      }
-
-      if (nextScrollLeft !== scrollLeft) {
-        scrollContainer.scrollLeft = nextScrollLeft
-      }
-    }
-
-    function handlePointerDown(event) {
-      if (event.target !== scrollContainer) {
-        return
-      }
-
-      const rect = scrollContainer.getBoundingClientRect()
-      const scrollbarHeight = scrollContainer.offsetHeight - scrollContainer.clientHeight
-      const isHorizontalScrollbar =
-        scrollbarHeight === 0 || event.clientY >= rect.bottom - scrollbarHeight
-
-      if (isHorizontalScrollbar) {
-        isHorizontalScrollbarDraggingRef.current = true
-      }
-    }
-
-    function finishScrollbarDrag() {
-      if (!isHorizontalScrollbarDraggingRef.current) {
-        return
-      }
-
-      isHorizontalScrollbarDraggingRef.current = false
-      requestAnimationFrame(keepMiddleMapInView)
-    }
-
-    scrollContainer.addEventListener('scroll', keepMiddleMapInView, { passive: true })
-    scrollContainer.addEventListener('pointerdown', handlePointerDown, { passive: true })
-    scrollContainer.addEventListener('scrollend', finishScrollbarDrag, { passive: true })
-    window.addEventListener('pointerup', finishScrollbarDrag)
-    window.addEventListener('pointercancel', finishScrollbarDrag)
-    window.addEventListener('mouseup', finishScrollbarDrag)
-    window.addEventListener('touchend', finishScrollbarDrag)
-    window.addEventListener('touchcancel', finishScrollbarDrag)
-    window.addEventListener('blur', finishScrollbarDrag)
-
-    return () => {
-      scrollContainer.removeEventListener('scroll', keepMiddleMapInView)
-      scrollContainer.removeEventListener('pointerdown', handlePointerDown)
-      scrollContainer.removeEventListener('scrollend', finishScrollbarDrag)
-      window.removeEventListener('pointerup', finishScrollbarDrag)
-      window.removeEventListener('pointercancel', finishScrollbarDrag)
-      window.removeEventListener('mouseup', finishScrollbarDrag)
-      window.removeEventListener('touchend', finishScrollbarDrag)
-      window.removeEventListener('touchcancel', finishScrollbarDrag)
-      window.removeEventListener('blur', finishScrollbarDrag)
-    }
-  }, [])
+  useWrappedHorizontalScroll({
+    mapScrollRef,
+    mapSize,
+    mapSizeRef,
+    zoom,
+    zoomRef,
+  })
 
   useEffect(() => {
     const scrollContainer = mapScrollRef.current
@@ -249,7 +156,7 @@ export function useMapViewport(mapSize) {
       wheelDeltaRef.current = 0
       wheelAnchorRef.current = null
     }
-  }, [updateZoom])
+  }, [mapScrollRef, updateZoom])
 
   const canvasStyle = useMemo(
     () =>

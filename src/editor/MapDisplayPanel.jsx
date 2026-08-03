@@ -1,20 +1,28 @@
-import { cn } from "../lib/utils";
-import { ChoiceInput } from './ChoiceInput';
-import { MapDisplayControlGroup } from './MapDisplayControlGroup';
-import { PanelSection } from './PanelSection';
+import { cn } from '../lib/utils'
+import { ChoiceInput } from './ChoiceInput'
+import { PanelSection } from './PanelSection'
+
+function MapDisplayControlGroup({ children, legend }) {
+  return (
+    <fieldset>
+      <legend>{legend}</legend>
+      <div className="flex gap-1.5 *:min-w-0 *:flex-1">{children}</div>
+    </fieldset>
+  )
+}
 
 export function MapDisplayPanel({
   className,
   borderMode,
+  countryLayerActive,
   onBorderModeChange,
-  onOpenSphereLayer,
+  onOpenCountryLayer,
   onRasterLayerChange,
   rasterLayers,
-  sphereLayerActive,
 }) {
   return (
     <PanelSection
-      className={cn("grid gap-2.5"), className}
+      className={cn('grid gap-2.5', className)}
       headingId="map-display-title"
       title="지도 레이어 설정"
     >
@@ -69,8 +77,8 @@ export function MapDisplayPanel({
       <button
         type="button"
         className="w-full"
-        aria-pressed={sphereLayerActive}
-        onClick={onOpenSphereLayer}
+        aria-pressed={countryLayerActive}
+        onClick={onOpenCountryLayer}
       >
         국가 레이어 설정
       </button>

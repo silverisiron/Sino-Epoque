@@ -1,3 +1,26 @@
+export function wouldCreateOverlordCycle(countryId, overlordId, countries) {
+  const visited = new Set()
+  let currentCountryId = overlordId
+
+  while (currentCountryId) {
+    if (currentCountryId === countryId || visited.has(currentCountryId)) {
+      return true
+    }
+
+    visited.add(currentCountryId)
+    currentCountryId = countries[currentCountryId]?.overlordId ?? null
+  }
+
+  return false
+}
+
+export function isEligiblePowerBlocLeader(country, autonomyTypes, powerRankTypes) {
+  return (
+    autonomyTypes[country?.autonomyTypeId]?.autonomy === 10 &&
+    powerRankTypes[country?.powerRankTypeId]?.level >= 7
+  )
+}
+
 export function getTopIndependentCountryId(countryId, countries, autonomyTypes) {
   const visited = new Set()
   let currentCountryId = countryId

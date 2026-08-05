@@ -16,6 +16,10 @@ function drawLayer(context, source, sourceRegion, targetRegion) {
   )
 }
 
+function isSourceReady(source) {
+  return Boolean(source?.naturalWidth || source?.width)
+}
+
 export function compositeMapLayers({
   baseCanvas,
   borderCanvas,
@@ -28,21 +32,23 @@ export function compositeMapLayers({
   riversVisible,
   sourceRegion,
   targetRegion,
+  waterCanvas,
 }) {
   context.imageSmoothingEnabled = true
   context.globalAlpha = 1
   context.globalCompositeOperation = 'source-over'
   drawLayer(context, baseCanvas, sourceRegion, targetRegion)
+  drawLayer(context, waterCanvas, sourceRegion, targetRegion)
   drawLayer(context, overlayCanvas, sourceRegion, targetRegion)
   drawLayer(context, countryLayerCanvas, sourceRegion, targetRegion)
   context.globalCompositeOperation = 'multiply'
 
-  if (heightmapVisible && heightmapSource?.naturalWidth) {
+  if (heightmapVisible && isSourceReady(heightmapSource)) {
     context.globalAlpha = 0.35
     drawLayer(context, heightmapSource, sourceRegion, targetRegion)
   }
 
-  if (riversVisible && riversSource?.naturalWidth) {
+  if (riversVisible && isSourceReady(riversSource)) {
     context.globalAlpha = 1
     drawLayer(context, riversSource, sourceRegion, targetRegion)
   }

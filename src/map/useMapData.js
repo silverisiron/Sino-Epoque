@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   buildProvincePixelCache,
-  drawBlankMap,
+  createWaterMaskImageData,
+  fillCanvasColor,
 } from './canvasRenderers'
 import {
   DEFINITION_PATH,
@@ -12,6 +13,7 @@ import {
 import { parseDefinitionCsv } from './provinceData'
 import { useMapBorderRenderer } from './useMapBorderRenderer'
 import { useMapRenderer } from './useMapRenderer'
+import { tintCanvasMask } from './rasterLayerColorizer'
 
 function waitForPaint() {
   return new Promise((resolve) => {
@@ -19,8 +21,9 @@ function waitForPaint() {
   })
 }
 
-export function useMapData(borderMode) {
+export function useMapData({ borderMode, mapColors }) {
   const baseCanvasRef = useRef(null)
+  const waterCanvasRef = useRef(null)
   const overlayCanvasRef = useRef(null)
   const countryLayerCanvasRef = useRef(null)
   const borderCanvasRef = useRef(null)
@@ -33,6 +36,7 @@ export function useMapData(borderMode) {
   const provincePixelCacheRef = useRef(new Map())
   const statesByIdRef = useRef(new Map())
   const stateByProvinceRef = useRef(new Map())
+  const mapColorsRef = useRef(mapColors)
 
   const [status, setStatus] = useState('지도 데이터를 불러오는 중입니다.')
   const [isMapRendering, setIsMapRendering] = useState(true)
@@ -52,6 +56,10 @@ export function useMapData(borderMode) {
     provincePixelCacheRef,
     invalidateWrappedMap,
   })
+
+  useEffect(() => {
+    mapColorsRef.current = mapColors
+  }, [mapColors])
 
   useEffect(() => {
     let ignore = false
@@ -106,6 +114,7 @@ export function useMapData(borderMode) {
         }
 
         const baseCanvas = baseCanvasRef.current
+        const waterCanvas = waterCanvasRef.current
         const overlayCanvas = overlayCanvasRef.current
         const countryLayerCanvas = countryLayerCanvasRef.current
         const borderCanvas = borderCanvasRef.current
@@ -113,6 +122,8 @@ export function useMapData(borderMode) {
 
         baseCanvas.width = image.naturalWidth
         baseCanvas.height = image.naturalHeight
+        waterCanvas.width = image.naturalWidth
+        waterCanvas.height = image.naturalHeight
         overlayCanvas.width = image.naturalWidth
         overlayCanvas.height = image.naturalHeight
         countryLayerCanvas.width = image.naturalWidth
@@ -130,9 +141,16 @@ export function useMapData(borderMode) {
           baseCanvas.height,
         )
         provincePixelCacheRef.current = buildProvincePixelCache(sourceImageData, provinceByRgb)
+        // Classify water once. Later color changes preserve this alpha mask.
+        waterCanvas.getContext('2d').putImageData(
+          createWaterMaskImageData(sourceImageData, provinceByRgb),
+          0,
+          0,
+        )
 
         await waitForPaint()
-        drawBlankMap(baseCanvas, sourceImageData, provinceByRgb)
+        fillCanvasColor(baseCanvas, mapColorsRef.current.land)
+        tintCanvasMask(waterCanvas, mapColorsRef.current.water)
         invalidateWrappedMap()
 
         setMapSize({ width: baseCanvas.width, height: baseCanvas.height })
@@ -152,8 +170,27 @@ export function useMapData(borderMode) {
     }
   }, [invalidateWrappedMap])
 
+  useEffect(() => {
+    if (!mapSize) {
+      return
+    }
+
+    fillCanvasColor(baseCanvasRef.current, mapColors.land)
+    invalidateWrappedMap()
+  }, [invalidateWrappedMap, mapColors.land, mapSize])
+
+  useEffect(() => {
+    if (!mapSize) {
+      return
+    }
+
+    tintCanvasMask(waterCanvasRef.current, mapColors.water)
+    invalidateWrappedMap()
+  }, [invalidateWrappedMap, mapColors.water, mapSize])
+
   useMapBorderRenderer({
     borderCanvasRef,
+    borderColor: mapColors.border,
     borderMode,
     invalidateWrappedMap,
     mapSize,
@@ -181,5 +218,6 @@ export function useMapData(borderMode) {
     stateByProvinceRef,
     statesByIdRef,
     status,
+    waterCanvasRef,
   }
 }

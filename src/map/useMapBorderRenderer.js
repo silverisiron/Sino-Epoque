@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { createBorderImageData } from './canvasRenderers'
+import { colorizeCanvasMask, tintCanvasMask } from './rasterLayerColorizer'
 
 function waitForPaint() {
   return new Promise((resolve) => {
@@ -9,6 +10,7 @@ function waitForPaint() {
 
 export function useMapBorderRenderer({
   borderCanvasRef,
+  borderColor,
   borderMode,
   invalidateWrappedMap,
   mapSize,
@@ -17,16 +19,18 @@ export function useMapBorderRenderer({
   sourceImageDataRef,
   stateByProvinceRef,
 }) {
-  const borderImageDataCacheRef = useRef(new Map())
+  const borderMaskCanvasCacheRef = useRef(new Map())
   const cachedMapSizeRef = useRef(mapSize)
+  const renderedBorderModeRef = useRef(null)
 
   useEffect(() => {
     let ignore = false
 
     async function renderBorderMode() {
       if (cachedMapSizeRef.current !== mapSize) {
-        borderImageDataCacheRef.current.clear()
+        borderMaskCanvasCacheRef.current.clear()
         cachedMapSizeRef.current = mapSize
+        renderedBorderModeRef.current = null
       }
 
       if (!mapSize || !sourceImageDataRef.current) {
@@ -36,17 +40,28 @@ export function useMapBorderRenderer({
       const borderCanvas = borderCanvasRef.current
       const borderContext = borderCanvas.getContext('2d')
 
+      function putTintedBorder(borderMaskCanvas) {
+        colorizeCanvasMask(borderMaskCanvas, borderColor, borderCanvas)
+      }
+
       if (borderMode === 'none') {
         borderContext.clearRect(0, 0, borderCanvas.width, borderCanvas.height)
+        renderedBorderModeRef.current = null
         invalidateWrappedMap()
         setIsMapRendering(false)
         return
       }
 
-      const cachedBorder = borderImageDataCacheRef.current.get(borderMode)
+      // Border geometry is cached by mode; changing color only tints its alpha mask.
+      const cachedBorder = borderMaskCanvasCacheRef.current.get(borderMode)
 
       if (cachedBorder) {
-        borderContext.putImageData(cachedBorder, 0, 0)
+        if (renderedBorderModeRef.current === borderMode) {
+          tintCanvasMask(borderCanvas, borderColor)
+        } else {
+          putTintedBorder(cachedBorder)
+          renderedBorderModeRef.current = borderMode
+        }
         invalidateWrappedMap()
         setIsMapRendering(false)
         return
@@ -65,8 +80,13 @@ export function useMapBorderRenderer({
         stateByProvinceRef.current,
         borderMode,
       )
-      borderImageDataCacheRef.current.set(borderMode, borderImageData)
-      borderContext.putImageData(borderImageData, 0, 0)
+      const borderMaskCanvas = document.createElement('canvas')
+      borderMaskCanvas.width = borderImageData.width
+      borderMaskCanvas.height = borderImageData.height
+      borderMaskCanvas.getContext('2d').putImageData(borderImageData, 0, 0)
+      borderMaskCanvasCacheRef.current.set(borderMode, borderMaskCanvas)
+      putTintedBorder(borderMaskCanvas)
+      renderedBorderModeRef.current = borderMode
       invalidateWrappedMap()
       setIsMapRendering(false)
     }
@@ -78,6 +98,7 @@ export function useMapBorderRenderer({
     }
   }, [
     borderCanvasRef,
+    borderColor,
     borderMode,
     invalidateWrappedMap,
     mapSize,

@@ -64,24 +64,32 @@ export function MapCanvas({
   overlayCanvasRef,
   paintMode,
   paintUnit,
+  rasterLayerColors,
   rasterLayers,
+  waterCanvasRef,
 }) {
   const viewport = useMapViewport(mapSize, mapScrollRef)
   const {
+    handleHeightmapLoad,
+    handleRiversLoad,
     heightmapImageRef,
+    heightmapLayerCanvasRef,
     leftWrappedCanvasRef,
     rightWrappedCanvasRef,
     riversImageRef,
-    scheduleWrappedMapRender,
+    riversLayerCanvasRef,
   } = useWrappedMapRenderer({
     baseCanvasRef,
     borderCanvasRef,
     canvasStyle: viewport.canvasStyle,
+    heightmapColor: rasterLayerColors.heightmap,
     heightmapVisible: rasterLayers.heightmap,
     wrappedMapInvalidationRef,
     mapScrollRef,
     overlayCanvasRef,
+    riversColor: rasterLayerColors.rivers,
     riversVisible: rasterLayers.rivers,
+    waterCanvasRef,
     countryLayerCanvasRef,
   })
 
@@ -123,6 +131,11 @@ export function MapCanvas({
                 aria-label="프로빈스 백지도"
               />
               <canvas
+                ref={waterCanvasRef}
+                className="pointer-events-none absolute inset-0 block size-full [image-rendering:pixelated]"
+                aria-hidden="true"
+              />
+              <canvas
                 ref={overlayCanvasRef}
                 className="pointer-events-none absolute inset-0 z-1 block size-full [image-rendering:pixelated]"
                 aria-hidden="true"
@@ -133,30 +146,38 @@ export function MapCanvas({
                 aria-hidden="true"
               />
               {rasterLayers.heightmap ? (
-                <img
-                  ref={heightmapImageRef}
-                  className="pointer-events-none absolute inset-0 z-3 block size-full object-fill opacity-35 mix-blend-multiply [image-rendering:pixelated]"
-                  src="/maps/base/bmp/heightmap.bmp"
-                  width="5632"
-                  height="2048"
-                  alt=""
-                  aria-hidden="true"
-                  draggable="false"
-                  onLoad={() => scheduleWrappedMapRender()}
-                />
+                <>
+                  <img
+                    ref={heightmapImageRef}
+                    className="hidden"
+                    src="/maps/base/bmp/heightmap.bmp"
+                    alt=""
+                    aria-hidden="true"
+                    onLoad={handleHeightmapLoad}
+                  />
+                  <canvas
+                    ref={heightmapLayerCanvasRef}
+                    className="pointer-events-none absolute inset-0 z-3 block size-full opacity-35 mix-blend-multiply [image-rendering:pixelated]"
+                    aria-hidden="true"
+                  />
+                </>
               ) : null}
               {rasterLayers.rivers ? (
-                <img
-                  ref={riversImageRef}
-                  className="pointer-events-none absolute inset-0 z-4 block size-full object-fill mix-blend-multiply [image-rendering:pixelated]"
-                  src="/maps/base/bmp/rivers.bmp"
-                  width="5632"
-                  height="2048"
-                  alt=""
-                  aria-hidden="true"
-                  draggable="false"
-                  onLoad={() => scheduleWrappedMapRender()}
-                />
+                <>
+                  <img
+                    ref={riversImageRef}
+                    className="hidden"
+                    src="/maps/base/bmp/rivers.bmp"
+                    alt=""
+                    aria-hidden="true"
+                    onLoad={handleRiversLoad}
+                  />
+                  <canvas
+                    ref={riversLayerCanvasRef}
+                    className="pointer-events-none absolute inset-0 z-4 block size-full mix-blend-multiply [image-rendering:pixelated]"
+                    aria-hidden="true"
+                  />
+                </>
               ) : null}
               <canvas
                 ref={borderCanvasRef}

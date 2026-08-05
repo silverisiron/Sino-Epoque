@@ -11,6 +11,7 @@ import { PresetLoader } from '../editor/PresetLoader'
 import { ProvinceInfo } from '../editor/ProvinceInfo'
 import { useMapEditor } from '../editor/useMapEditor'
 import { downloadRenderedMapPng } from '../map/exportMapImage'
+import { DEFAULT_MAP_COLORS } from '../map/mapAppearance'
 import { useMapData } from '../map/useMapData'
 import { useMapEditorShortcuts } from './useMapEditorShortcuts'
 
@@ -18,6 +19,7 @@ export function AdminMapEditorPage() {
   const mapScrollRef = useRef(null)
   const [workspaceMode, setWorkspaceMode] = useState('editor')
   const [borderMode, setBorderMode] = useState('state')
+  const [mapColors, setMapColors] = useState(() => ({ ...DEFAULT_MAP_COLORS }))
   const [rasterLayers, setRasterLayers] = useState({
     heightmap: false,
     rivers: false,
@@ -25,7 +27,7 @@ export function AdminMapEditorPage() {
   const [isLeftPanelExpanded, setIsLeftPanelExpanded] = useState(true)
   const [isRightPanelExpanded, setIsRightPanelExpanded] = useState(true)
   const [isCountryLayerModalOpen, setIsCountryLayerModalOpen] = useState(false)
-  const mapData = useMapData(borderMode)
+  const mapData = useMapData({ borderMode, mapColors })
   const editor = useMapEditor({
     mapRenderer: mapData.renderer,
     mapSize: mapData.mapSize,
@@ -58,6 +60,13 @@ export function AdminMapEditorPage() {
     }))
   }
 
+  function handleMapColorChange(colorId, color) {
+    setMapColors((currentColors) => ({
+      ...currentColors,
+      [colorId]: color,
+    }))
+  }
+
   async function handleExportPng() {
     try {
       await downloadRenderedMapPng({
@@ -65,7 +74,9 @@ export function AdminMapEditorPage() {
         borderCanvas: mapData.borderCanvasRef.current,
         heightmapVisible: rasterLayers.heightmap,
         overlayCanvas: mapData.overlayCanvasRef.current,
+        rasterLayerColors: mapColors,
         riversVisible: rasterLayers.rivers,
+        waterCanvas: mapData.waterCanvasRef.current,
         countryLayerCanvas: mapData.countryLayerCanvasRef.current,
       })
       mapData.setStatus('원본 해상도 PNG가 저장되었습니다.')
@@ -188,7 +199,9 @@ export function AdminMapEditorPage() {
         overlayCanvasRef={mapData.overlayCanvasRef}
         paintMode={editor.paintMode}
         paintUnit={editor.paintUnit}
+        rasterLayerColors={mapColors}
         rasterLayers={rasterLayers}
+        waterCanvasRef={mapData.waterCanvasRef}
       />
 
       <MapEditorPanel
@@ -201,9 +214,11 @@ export function AdminMapEditorPage() {
           <>
             <MapDisplayPanel
               borderMode={borderMode}
+              mapColors={mapColors}
               onBorderModeChange={setBorderMode}
               countryLayerActive={countryLayerActive}
               onOpenCountryLayer={() => setIsCountryLayerModalOpen(true)}
+              onMapColorChange={handleMapColorChange}
               onRasterLayerChange={handleRasterLayerChange}
               rasterLayers={rasterLayers}
             />

@@ -4,10 +4,9 @@ import { CountryPanel } from '../editor/CountryPanel'
 import { MapCanvas } from '../editor/MapCanvas'
 import { MapDisplayPanel } from '../editor/MapDisplayPanel'
 import { MapEditorPanel } from '../editor/MapEditorPanel'
-import { MapExportPanel } from '../editor/MapExportPanel'
 import { NumericTypePanel } from '../editor/NumericTypePanel'
 import { PowerBlocPanel } from '../editor/PowerBlocPanel'
-import { PresetLoader } from '../editor/PresetLoader'
+import { PresetPanel } from '../editor/PresetPanel'
 import { ProvinceInfo } from '../editor/ProvinceInfo'
 import { useMapEditor } from '../editor/useMapEditor'
 import { downloadRenderedMapPng } from '../map/exportMapImage'
@@ -111,7 +110,7 @@ export function AdminMapEditorPage() {
                 aria-pressed={workspaceMode === 'loader'}
                 onClick={() => setWorkspaceMode('loader')}
               >
-                프리셋 불러오기
+                프리셋 관리
               </button>
             </li>
           </ul>
@@ -235,16 +234,14 @@ export function AdminMapEditorPage() {
               selectCountry={editor.selectCountry}
               updateCountry={editor.updateCountry}
             />
-            <MapExportPanel
-              exportPng={handleExportPng}
-              pngExportDisabled={!mapData.mapSize || mapData.isMapRendering}
-              preset={editor.preset}
-            />
           </>
         ) : (
-          <PresetLoader
+          <PresetPanel
+            exportPng={handleExportPng}
             onLoadPreset={() => editor.loadPreset()}
             onSelectedPresetPathChange={mapData.setSelectedPresetPath}
+            pngExportDisabled={!mapData.mapSize || mapData.isMapRendering}
+            preset={editor.preset}
             presetIndex={mapData.presetIndex}
             selectedPresetPath={mapData.selectedPresetPath}
           />

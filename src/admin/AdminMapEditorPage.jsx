@@ -17,6 +17,7 @@ import { useMapEditorShortcuts } from './useMapEditorShortcuts'
 export function AdminMapEditorPage() {
   const mapScrollRef = useRef(null)
   const [workspaceMode, setWorkspaceMode] = useState('editor')
+  const [viewMode, setViewMode] = useState('2d')
   const [borderMode, setBorderMode] = useState('state')
   const [mapColors, setMapColors] = useState(() => ({ ...DEFAULT_MAP_COLORS }))
   const [rasterLayers, setRasterLayers] = useState({
@@ -42,6 +43,7 @@ export function AdminMapEditorPage() {
   })
   const { redo, selectTool, setTemporaryPanActive, undo } = editor
   useMapEditorShortcuts({
+    viewMode,
     workspaceMode,
     redo,
     undo,
@@ -64,6 +66,14 @@ export function AdminMapEditorPage() {
       ...currentColors,
       [colorId]: color,
     }))
+  }
+
+  function handleViewModeChange(nextViewMode) {
+    if (nextViewMode === '3d') {
+      setIsCountryLayerModalOpen(false)
+    }
+
+    setViewMode(nextViewMode)
   }
 
   async function handleExportPng() {
@@ -117,66 +127,69 @@ export function AdminMapEditorPage() {
         </nav>
       </header>
 
-      <MapEditorPanel
-        expanded={isLeftPanelExpanded}
-        label="데이터 도구"
-        onToggle={() => setIsLeftPanelExpanded((isExpanded) => !isExpanded)}
-        side="left"
-      >
-        {workspaceMode === 'editor' ? (
-          <>
-            <NumericTypePanel
-              heading="Autonomy Types"
-              headingId="autonomy-types-title"
-              isInUse={(typeId) =>
-                Object.keys(editor.autonomyTypes).length <= 1 ||
-                Object.values(editor.countries).some(
-                  (country) => country.autonomyTypeId === typeId,
-                )
-              }
-              onAdd={editor.addAutonomyType}
-              onDelete={editor.deleteAutonomyType}
-              onDeleteSelected={editor.deleteAutonomyTypes}
-              onUpdate={editor.updateAutonomyType}
-              types={editor.autonomyTypes}
-              valueKey="autonomy"
-              valueLabel="자치도 유형"
-            />
+      {viewMode === '2d' ? (
+        <MapEditorPanel
+          expanded={isLeftPanelExpanded}
+          label="데이터 도구"
+          onToggle={() => setIsLeftPanelExpanded((isExpanded) => !isExpanded)}
+          side="left"
+        >
+          {workspaceMode === 'editor' ? (
+            <>
+              <NumericTypePanel
+                heading="Autonomy Types"
+                headingId="autonomy-types-title"
+                isInUse={(typeId) =>
+                  Object.keys(editor.autonomyTypes).length <= 1 ||
+                  Object.values(editor.countries).some(
+                    (country) => country.autonomyTypeId === typeId,
+                  )
+                }
+                onAdd={editor.addAutonomyType}
+                onDelete={editor.deleteAutonomyType}
+                onDeleteSelected={editor.deleteAutonomyTypes}
+                onUpdate={editor.updateAutonomyType}
+                types={editor.autonomyTypes}
+                valueKey="autonomy"
+                valueLabel="자치도 유형"
+              />
 
-            <NumericTypePanel
-              heading="Power Ranks"
-              headingId="power-ranks-title"
-              isInUse={(typeId) =>
-                Object.keys(editor.powerRankTypes).length <= 1 ||
-                Object.values(editor.countries).some(
-                  (country) => country.powerRankTypeId === typeId,
-                )
-              }
-              onAdd={editor.addPowerRankType}
-              onDelete={editor.deletePowerRankType}
-              onDeleteSelected={editor.deletePowerRankTypes}
-              onUpdate={editor.updatePowerRankType}
-              types={editor.powerRankTypes}
-              valueKey="level"
-              valueLabel="국가 등급"
-            />
+              <NumericTypePanel
+                heading="Power Ranks"
+                headingId="power-ranks-title"
+                isInUse={(typeId) =>
+                  Object.keys(editor.powerRankTypes).length <= 1 ||
+                  Object.values(editor.countries).some(
+                    (country) => country.powerRankTypeId === typeId,
+                  )
+                }
+                onAdd={editor.addPowerRankType}
+                onDelete={editor.deletePowerRankType}
+                onDeleteSelected={editor.deletePowerRankTypes}
+                onUpdate={editor.updatePowerRankType}
+                types={editor.powerRankTypes}
+                valueKey="level"
+                valueLabel="국가 등급"
+              />
 
-            <PowerBlocPanel
-              addPowerBloc={editor.addPowerBloc}
-              autonomyTypes={editor.autonomyTypes}
-              countries={editor.countries}
-              countryOrder={editor.countryOrder}
-              deletePowerBloc={editor.deletePowerBloc}
-              deletePowerBlocs={editor.deletePowerBlocs}
-              powerBlocs={editor.powerBlocs}
-              powerRankTypes={editor.powerRankTypes}
-              updatePowerBloc={editor.updatePowerBloc}
-            />
-          </>
-        ) : null}
-      </MapEditorPanel>
+              <PowerBlocPanel
+                addPowerBloc={editor.addPowerBloc}
+                autonomyTypes={editor.autonomyTypes}
+                countries={editor.countries}
+                countryOrder={editor.countryOrder}
+                deletePowerBloc={editor.deletePowerBloc}
+                deletePowerBlocs={editor.deletePowerBlocs}
+                powerBlocs={editor.powerBlocs}
+                powerRankTypes={editor.powerRankTypes}
+                updatePowerBloc={editor.updatePowerBloc}
+              />
+            </>
+          ) : null}
+        </MapEditorPanel>
+      ) : null}
 
       <MapCanvas
+        viewMode={viewMode}
         effectiveTool={editor.effectiveTool}
         baseCanvasRef={mapData.baseCanvasRef}
         borderCanvasRef={mapData.borderCanvasRef}
@@ -190,16 +203,20 @@ export function AdminMapEditorPage() {
         onToolSelect={selectTool}
         onPaintModeChange={editor.setPaintMode}
         onPaintUnitChange={editor.setPaintUnit}
+        onProvinceInspect={editor.inspectProvinceHit}
         onPointerDown={editor.handlePointerDown}
         onPointerMove={editor.handlePointerMove}
         onPointerUp={editor.handlePointerUp}
         onRedo={editor.redo}
         onUndo={editor.undo}
+        onViewModeChange={handleViewModeChange}
         overlayCanvasRef={mapData.overlayCanvasRef}
         paintMode={editor.paintMode}
         paintUnit={editor.paintUnit}
+        provinceByRgbRef={mapData.provinceByRgbRef}
         rasterLayerColors={mapColors}
         rasterLayers={rasterLayers}
+        sourceImageDataRef={mapData.sourceImageDataRef}
         waterCanvasRef={mapData.waterCanvasRef}
       />
 
@@ -209,46 +226,48 @@ export function AdminMapEditorPage() {
         onToggle={() => setIsRightPanelExpanded((isExpanded) => !isExpanded)}
         side="right"
       >
-        {workspaceMode === 'editor' ? (
-          <>
-            <MapDisplayPanel
-              borderMode={borderMode}
-              mapColors={mapColors}
-              onBorderModeChange={setBorderMode}
-              countryLayerActive={countryLayerActive}
-              onOpenCountryLayer={() => setIsCountryLayerModalOpen(true)}
-              onMapColorChange={handleMapColorChange}
-              onRasterLayerChange={handleRasterLayerChange}
-              rasterLayers={rasterLayers}
+        {viewMode === '2d' ? (
+          workspaceMode === 'editor' ? (
+            <>
+              <MapDisplayPanel
+                borderMode={borderMode}
+                mapColors={mapColors}
+                onBorderModeChange={setBorderMode}
+                countryLayerActive={countryLayerActive}
+                onOpenCountryLayer={() => setIsCountryLayerModalOpen(true)}
+                onMapColorChange={handleMapColorChange}
+                onRasterLayerChange={handleRasterLayerChange}
+                rasterLayers={rasterLayers}
+              />
+              <CountryPanel
+                activeCountryId={editor.activeCountryId}
+                addCountry={editor.addCountry}
+                autonomyTypes={editor.autonomyTypes}
+                countries={editor.countries}
+                countryOrder={editor.countryOrder}
+                deleteCountry={editor.deleteCountry}
+                powerBlocs={editor.powerBlocs}
+                powerRankTypes={editor.powerRankTypes}
+                reorderCountries={editor.reorderCountries}
+                selectCountry={editor.selectCountry}
+                updateCountry={editor.updateCountry}
+              />
+            </>
+          ) : (
+            <PresetPanel
+              exportPng={handleExportPng}
+              onLoadPreset={() => editor.loadPreset()}
+              onSelectedPresetPathChange={mapData.setSelectedPresetPath}
+              pngExportDisabled={!mapData.mapSize || mapData.isMapRendering}
+              preset={editor.preset}
+              presetIndex={mapData.presetIndex}
+              selectedPresetPath={mapData.selectedPresetPath}
             />
-            <CountryPanel
-              activeCountryId={editor.activeCountryId}
-              addCountry={editor.addCountry}
-              autonomyTypes={editor.autonomyTypes}
-              countries={editor.countries}
-              countryOrder={editor.countryOrder}
-              deleteCountry={editor.deleteCountry}
-              powerBlocs={editor.powerBlocs}
-              powerRankTypes={editor.powerRankTypes}
-              reorderCountries={editor.reorderCountries}
-              selectCountry={editor.selectCountry}
-              updateCountry={editor.updateCountry}
-            />
-          </>
-        ) : (
-          <PresetPanel
-            exportPng={handleExportPng}
-            onLoadPreset={() => editor.loadPreset()}
-            onSelectedPresetPathChange={mapData.setSelectedPresetPath}
-            pngExportDisabled={!mapData.mapSize || mapData.isMapRendering}
-            preset={editor.preset}
-            presetIndex={mapData.presetIndex}
-            selectedPresetPath={mapData.selectedPresetPath}
-          />
-        )}
+          )
+        ) : null}
 
         <ProvinceInfo
-          isEditor={workspaceMode === 'editor'}
+          isEditor={workspaceMode === 'editor' && viewMode === '2d'}
           onUnassignSelectedArea={editor.unassignSelectedArea}
           selectedCountry={editor.selectedCountry}
           selectedProvinceHit={editor.selectedProvinceHit}
@@ -256,7 +275,7 @@ export function AdminMapEditorPage() {
         />
       </MapEditorPanel>
 
-      {isCountryLayerModalOpen ? (
+      {viewMode === '2d' && isCountryLayerModalOpen ? (
         <CountryLayerModal
           autonomyTypes={editor.autonomyTypes}
           countries={editor.countries}

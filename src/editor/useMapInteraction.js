@@ -80,6 +80,17 @@ export function useMapInteraction({
       : [province]
   }
 
+  function inspectProvinceHit(provinceHit) {
+    const province = provinceHit?.province
+
+    if (!province) {
+      return
+    }
+
+    setSelectedProvinceHit(provinceHit)
+    setSelectedState(getProvinceState(province))
+  }
+
   function renderProvinceAssignmentPatch(provinces, countryId, editorState) {
     mapRenderer.renderProvinceAssignmentPatch({
       provinces,
@@ -102,11 +113,10 @@ export function useMapInteraction({
       return
     }
 
-    setSelectedProvinceHit(provinceHit)
+    inspectProvinceHit(provinceHit)
     lastPaintedProvinceIdRef.current = province.id
 
     const provinceState = getProvinceState(province)
-    setSelectedState(provinceState)
 
     if (
       workspaceMode !== 'editor' ||
@@ -284,6 +294,7 @@ export function useMapInteraction({
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
+    inspectProvinceHit,
     paintMode,
     paintUnit,
     selectTool: setSelectedTool,

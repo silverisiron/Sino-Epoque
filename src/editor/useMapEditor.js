@@ -382,6 +382,7 @@ export function useMapEditor({
     handlePointerDown: interaction.handlePointerDown,
     handlePointerMove: interaction.handlePointerMove,
     handlePointerUp: interaction.handlePointerUp,
+    inspectProvinceHit: interaction.inspectProvinceHit,
     loadPreset,
     paintMode: interaction.paintMode,
     paintUnit: interaction.paintUnit,

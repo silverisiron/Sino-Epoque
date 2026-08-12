@@ -1,6 +1,14 @@
+import { lazy, Suspense } from 'react'
+import Rotate3d from 'lucide-react/dist/esm/icons/rotate-3d.mjs'
 import { useMapViewport } from '../map/useMapViewport'
 import { useWrappedMapRenderer } from '../map/useWrappedMapRenderer'
 import { MapToolbar } from './MapToolbar'
+
+const ThreeHemisphereMap = lazy(() =>
+  import('./ThreeHemisphereMap').then((module) => ({
+    default: module.ThreeHemisphereMap,
+  })),
+)
 
 function MapControlGroup({ children, label, position }) {
   const positionClassName = position === 'left' ? 'left-4' : 'right-4'
@@ -43,6 +51,7 @@ function WrappedMapTile({
 }
 
 export function MapCanvas({
+  viewMode,
   effectiveTool,
   baseCanvasRef,
   borderCanvasRef,
@@ -56,18 +65,23 @@ export function MapCanvas({
   onToolSelect,
   onPaintModeChange,
   onPaintUnitChange,
+  onProvinceInspect,
   onPointerDown,
   onPointerMove,
   onPointerUp,
   onRedo,
   onUndo,
+  onViewModeChange,
   overlayCanvasRef,
   paintMode,
   paintUnit,
+  provinceByRgbRef,
   rasterLayerColors,
   rasterLayers,
+  sourceImageDataRef,
   waterCanvasRef,
 }) {
+  const isThreeDimensional = viewMode === '3d'
   const viewport = useMapViewport(mapSize, mapScrollRef)
   const {
     handleHeightmapLoad,
@@ -75,6 +89,8 @@ export function MapCanvas({
     heightmapImageRef,
     heightmapLayerCanvasRef,
     leftWrappedCanvasRef,
+    mapTextureCanvasRef,
+    mapTextureUpdateListenerRef,
     rightWrappedCanvasRef,
     riversImageRef,
     riversLayerCanvasRef,
@@ -84,6 +100,7 @@ export function MapCanvas({
     canvasStyle: viewport.canvasStyle,
     heightmapColor: rasterLayerColors.heightmap,
     heightmapVisible: rasterLayers.heightmap,
+    isThreeDimensional,
     wrappedMapInvalidationRef,
     mapScrollRef,
     overlayCanvasRef,
@@ -99,8 +116,9 @@ export function MapCanvas({
       aria-label="지도 캔버스"
     >
       <div
-        className="scrollbar-custom relative size-full overflow-auto bg-canvas max-[56.25rem]:max-h-[60vh]"
+        className={`scrollbar-custom relative size-full overflow-auto bg-canvas max-[56.25rem]:max-h-[60vh] ${isThreeDimensional ? 'pointer-events-none invisible' : ''}`}
         ref={mapScrollRef}
+        aria-hidden={isThreeDimensional}
       >
         <div className="grid min-h-full min-w-full place-items-center">
           <div
@@ -213,52 +231,105 @@ export function MapCanvas({
         ) : null}
       </div>
 
-      <MapControlGroup label="편집 기록" position="left">
-        <button
-          type="button"
-          aria-label="실행 취소"
-          disabled={!canUndo}
-          onClick={onUndo}
-          title="실행 취소 (Ctrl/Cmd+Z)"
-        >
-          ↶
-        </button>
-        <button
-          type="button"
-          aria-label="다시 실행"
-          disabled={!canRedo}
-          onClick={onRedo}
-          title="다시 실행 (Ctrl/Cmd+Y)"
-        >
-          ↷
-        </button>
-      </MapControlGroup>
+      <canvas ref={mapTextureCanvasRef} className="hidden" aria-hidden="true" />
 
-      <MapControlGroup label="확대 축소" position="right">
-        <button
-          type="button"
-          aria-label="확대"
-          onClick={() => viewport.updateZoom(viewport.zoomRef.current * 1.15)}
+      {isThreeDimensional ? (
+        <Suspense
+          fallback={
+            <div
+              className="absolute inset-0 grid place-items-center bg-slate-950 text-sm font-semibold text-white"
+              role="status"
+            >
+              3D 지도를 준비하는 중입니다.
+            </div>
+          }
         >
-          +
-        </button>
-        <button
-          type="button"
-          aria-label="축소"
-          onClick={() => viewport.updateZoom(viewport.zoomRef.current / 1.15)}
-        >
-          -
-        </button>
-      </MapControlGroup>
+          <ThreeHemisphereMap
+            isMapRendering={isMapRendering}
+            mapSize={mapSize}
+            mapTextureCanvasRef={mapTextureCanvasRef}
+            mapTextureUpdateListenerRef={mapTextureUpdateListenerRef}
+            onProvinceInspect={onProvinceInspect}
+            provinceByRgbRef={provinceByRgbRef}
+            sourceImageDataRef={sourceImageDataRef}
+          />
+        </Suspense>
+      ) : null}
 
-      <MapToolbar
-        effectiveTool={effectiveTool}
-        onToolSelect={onToolSelect}
-        onPaintModeChange={onPaintModeChange}
-        onPaintUnitChange={onPaintUnitChange}
-        paintMode={paintMode}
-        paintUnit={paintUnit}
-      />
+      <button
+        type="button"
+        className="absolute top-4 left-1/2 z-30 flex min-h-8 -translate-x-1/2 items-center gap-1.5 rounded-full border border-black/15 bg-white/90 px-3 text-xs font-semibold text-slate-900 shadow-sm backdrop-blur-sm hover:bg-white"
+        aria-label={isThreeDimensional ? '2D 지도로 전환' : '3D 지도로 전환'}
+        aria-pressed={isThreeDimensional}
+        onClick={() => onViewModeChange(isThreeDimensional ? '2d' : '3d')}
+      >
+        <Rotate3d aria-hidden="true" size={14} strokeWidth={2} />
+        {isThreeDimensional ? '2D 보기' : '3D 보기'}
+      </button>
+
+      {!isThreeDimensional ? (
+        <>
+          <MapControlGroup label="편집 기록" position="left">
+            <button
+              type="button"
+              aria-label="실행 취소"
+              disabled={!canUndo}
+              onClick={onUndo}
+              title="실행 취소 (Ctrl/Cmd+Z)"
+            >
+              ↶
+            </button>
+            <button
+              type="button"
+              aria-label="다시 실행"
+              disabled={!canRedo}
+              onClick={onRedo}
+              title="다시 실행 (Ctrl/Cmd+Y)"
+            >
+              ↷
+            </button>
+          </MapControlGroup>
+
+          <MapControlGroup label="확대 축소" position="right">
+            <button
+              type="button"
+              aria-label="확대"
+              onClick={() => viewport.updateZoom(viewport.zoomRef.current * 1.15)}
+            >
+              +
+            </button>
+            <button
+              type="button"
+              aria-label="축소"
+              onClick={() => viewport.updateZoom(viewport.zoomRef.current / 1.15)}
+            >
+              -
+            </button>
+          </MapControlGroup>
+
+          <MapToolbar
+            effectiveTool={effectiveTool}
+            onToolSelect={onToolSelect}
+            onPaintModeChange={onPaintModeChange}
+            onPaintUnitChange={onPaintUnitChange}
+            paintMode={paintMode}
+            paintUnit={paintUnit}
+          />
+        </>
+      ) : (
+        <div
+          className="pointer-events-none absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/15 bg-slate-950/75 px-3 py-2 text-xs font-medium text-white shadow-lg backdrop-blur-sm"
+          role="status"
+        >
+          <Rotate3d aria-hidden="true" size={14} strokeWidth={2} />
+          <span className="hidden sm:inline">
+            화면 이동 활성화 · 드래그하여 회전 · 클릭하여 Province 확인
+          </span>
+          <span className="whitespace-nowrap sm:hidden">
+            드래그 회전 · 클릭 정보
+          </span>
+        </div>
+      )}
     </section>
   )
 }

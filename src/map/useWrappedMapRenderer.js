@@ -7,6 +7,7 @@ import {
 } from './rasterLayerColorizer'
 
 const FULL_MAP_DIRTY = 'full'
+const MAX_TEXTURE_WIDTH = 4096
 const RESOLUTION_REFRESH_DELAY_MS = 120
 
 function mergeDirtyRegions(currentRegion, nextRegion) {
@@ -97,6 +98,53 @@ function renderWrappedCanvas({
   })
 }
 
+function renderMapTexture({
+  baseCanvas,
+  borderCanvas,
+  heightmapImage,
+  heightmapVisible,
+  overlayCanvas,
+  riversImage,
+  riversVisible,
+  countryLayerCanvas,
+  targetCanvas,
+  waterCanvas,
+}) {
+  const scale = Math.min(1, MAX_TEXTURE_WIDTH / baseCanvas.width)
+  const targetWidth = Math.max(1, Math.round(baseCanvas.width * scale))
+  const targetHeight = Math.max(1, Math.round(baseCanvas.height * scale))
+
+  if (targetCanvas.width !== targetWidth || targetCanvas.height !== targetHeight) {
+    targetCanvas.width = targetWidth
+    targetCanvas.height = targetHeight
+  }
+
+  const context = targetCanvas.getContext('2d')
+  const sourceRegion = {
+    x: 0,
+    y: 0,
+    width: baseCanvas.width,
+    height: baseCanvas.height,
+  }
+  const targetRegion = { x: 0, y: 0, width: targetWidth, height: targetHeight }
+
+  context.clearRect(0, 0, targetWidth, targetHeight)
+  compositeMapLayers({
+    baseCanvas,
+    borderCanvas,
+    context,
+    countryLayerCanvas,
+    heightmapSource: heightmapImage,
+    heightmapVisible,
+    overlayCanvas,
+    riversSource: riversImage,
+    riversVisible,
+    sourceRegion,
+    targetRegion,
+    waterCanvas,
+  })
+}
+
 export function useWrappedMapRenderer({
   baseCanvasRef,
   borderCanvasRef,
@@ -104,6 +152,7 @@ export function useWrappedMapRenderer({
   countryLayerCanvasRef,
   heightmapColor,
   heightmapVisible,
+  isThreeDimensional,
   wrappedMapInvalidationRef,
   mapScrollRef,
   overlayCanvasRef,
@@ -113,6 +162,8 @@ export function useWrappedMapRenderer({
 }) {
   const leftWrappedCanvasRef = useRef(null)
   const rightWrappedCanvasRef = useRef(null)
+  const mapTextureCanvasRef = useRef(null)
+  const mapTextureUpdateListenerRef = useRef(null)
   const heightmapImageRef = useRef(null)
   const riversImageRef = useRef(null)
   const heightmapLayerCanvasRef = useRef(null)
@@ -122,13 +173,42 @@ export function useWrappedMapRenderer({
   const wrappedRenderFrameRef = useRef(null)
   const resolutionRefreshTimerRef = useRef(null)
   const wrappedDirtyRegionsRef = useRef([FULL_MAP_DIRTY, FULL_MAP_DIRTY])
+  const mapTextureDirtyRegionRef = useRef(FULL_MAP_DIRTY)
   const forceWrappedMapRenderRef = useRef(false)
 
   const renderWrappedMaps = useCallback(() => {
     const baseCanvas = baseCanvasRef.current
     const scrollContainer = mapScrollRef.current
 
-    if (!baseCanvas?.width || !baseCanvas.height || !scrollContainer) {
+    if (!baseCanvas?.width || !baseCanvas.height) {
+      return
+    }
+
+    const heightmapImage = heightmapLayerCanvasRef.current
+    const riversImage = riversLayerCanvasRef.current
+
+    if (
+      isThreeDimensional &&
+      mapTextureCanvasRef.current &&
+      mapTextureDirtyRegionRef.current
+    ) {
+      renderMapTexture({
+        baseCanvas,
+        borderCanvas: borderCanvasRef.current,
+        heightmapImage,
+        heightmapVisible,
+        overlayCanvas: overlayCanvasRef.current,
+        riversImage,
+        riversVisible,
+        countryLayerCanvas: countryLayerCanvasRef.current,
+        targetCanvas: mapTextureCanvasRef.current,
+        waterCanvas: waterCanvasRef.current,
+      })
+      mapTextureDirtyRegionRef.current = null
+      mapTextureUpdateListenerRef.current?.()
+    }
+
+    if (!scrollContainer) {
       return
     }
 
@@ -144,8 +224,6 @@ export function useWrappedMapRenderer({
     )
     const targetWidth = Math.max(1, Math.round(baseCanvas.width * resolutionScale))
     const targetHeight = Math.max(1, Math.round(baseCanvas.height * resolutionScale))
-    const heightmapImage = heightmapLayerCanvasRef.current
-    const riversImage = riversLayerCanvasRef.current
     const wrappedMaps = [
       {
         canvas: leftWrappedCanvasRef.current,
@@ -191,6 +269,7 @@ export function useWrappedMapRenderer({
     baseCanvasRef,
     borderCanvasRef,
     heightmapVisible,
+    isThreeDimensional,
     mapScrollRef,
     overlayCanvasRef,
     riversVisible,
@@ -199,9 +278,13 @@ export function useWrappedMapRenderer({
   ])
 
   const queueWrappedMapRender = useCallback(() => {
+    const hasTextureWork =
+      isThreeDimensional && Boolean(mapTextureDirtyRegionRef.current)
+
     if (
       wrappedRenderFrameRef.current !== null ||
-      wrappedDirtyRegionsRef.current.every((dirtyRegion) => !dirtyRegion)
+      (!hasTextureWork &&
+        wrappedDirtyRegionsRef.current.every((dirtyRegion) => !dirtyRegion))
     ) {
       return
     }
@@ -210,12 +293,16 @@ export function useWrappedMapRenderer({
       wrappedRenderFrameRef.current = null
       renderWrappedMaps()
     })
-  }, [renderWrappedMaps])
+  }, [isThreeDimensional, renderWrappedMaps])
 
   const scheduleWrappedMapRender = useCallback(
     (dirtyRegion) => {
       wrappedDirtyRegionsRef.current = wrappedDirtyRegionsRef.current.map((currentRegion) =>
         mergeDirtyRegions(currentRegion, dirtyRegion),
+      )
+      mapTextureDirtyRegionRef.current = mergeDirtyRegions(
+        mapTextureDirtyRegionRef.current,
+        dirtyRegion,
       )
       queueWrappedMapRender()
     },
@@ -352,6 +439,8 @@ export function useWrappedMapRenderer({
     heightmapImageRef,
     heightmapLayerCanvasRef,
     leftWrappedCanvasRef,
+    mapTextureCanvasRef,
+    mapTextureUpdateListenerRef,
     rightWrappedCanvasRef,
     riversImageRef,
     riversLayerCanvasRef,

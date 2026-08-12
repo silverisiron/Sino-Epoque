@@ -18,6 +18,7 @@ function blocksMapToolShortcut(target) {
 }
 
 export function useMapEditorShortcuts({
+  viewMode,
   workspaceMode,
   redo,
   undo,
@@ -29,6 +30,7 @@ export function useMapEditorShortcuts({
       const target = event.target
 
       if (
+        viewMode !== '2d' ||
         event.defaultPrevented ||
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
@@ -52,12 +54,13 @@ export function useMapEditorShortcuts({
 
     window.addEventListener('keydown', handleHistoryShortcut)
     return () => window.removeEventListener('keydown', handleHistoryShortcut)
-  }, [redo, undo])
+  }, [redo, undo, viewMode])
 
   useEffect(() => {
     function handleToolShortcut(event) {
       if (event.key === 'Alt') {
         if (
+          viewMode === '2d' &&
           workspaceMode === 'editor' &&
           !event.repeat &&
           !blocksMapToolShortcut(event.target)
@@ -72,6 +75,7 @@ export function useMapEditorShortcuts({
       const nextTool = MAP_TOOL_SHORTCUTS[event.code]
 
       if (
+        viewMode !== '2d' ||
         workspaceMode !== 'editor' ||
         !nextTool ||
         event.defaultPrevented ||
@@ -111,5 +115,5 @@ export function useMapEditorShortcuts({
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       setTemporaryPanActive(false)
     }
-  }, [selectTool, setTemporaryPanActive, workspaceMode])
+  }, [selectTool, setTemporaryPanActive, viewMode, workspaceMode])
 }

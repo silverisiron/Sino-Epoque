@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import Pencil from 'lucide-react/dist/esm/icons/pencil.mjs'
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2.mjs'
+import { useState } from 'react'
 import { PanelSection } from './PanelSection'
 import { PowerBlocEditModal } from './PowerBlocEditModal'
 

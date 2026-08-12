@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { compositeMapLayers } from './mapLayerCompositor'
+import {
+  colorizeRasterLayer,
+  createRasterLayerMask,
+  tintCanvasMask,
+} from './rasterLayerColorizer'
 
 const FULL_MAP_DIRTY = 'full'
 const RESOLUTION_REFRESH_DELAY_MS = 120
@@ -40,6 +45,7 @@ function renderWrappedCanvas({
   targetCanvas,
   targetHeight,
   targetWidth,
+  waterCanvas,
 }) {
   let region = dirtyRegion
 
@@ -87,6 +93,7 @@ function renderWrappedCanvas({
     riversVisible,
     sourceRegion,
     targetRegion,
+    waterCanvas,
   })
 }
 
@@ -95,16 +102,23 @@ export function useWrappedMapRenderer({
   borderCanvasRef,
   canvasStyle,
   countryLayerCanvasRef,
+  heightmapColor,
   heightmapVisible,
   wrappedMapInvalidationRef,
   mapScrollRef,
   overlayCanvasRef,
+  riversColor,
   riversVisible,
+  waterCanvasRef,
 }) {
   const leftWrappedCanvasRef = useRef(null)
   const rightWrappedCanvasRef = useRef(null)
   const heightmapImageRef = useRef(null)
   const riversImageRef = useRef(null)
+  const heightmapLayerCanvasRef = useRef(null)
+  const riversLayerCanvasRef = useRef(null)
+  const heightmapMaskRef = useRef(null)
+  const riversMaskRef = useRef(null)
   const wrappedRenderFrameRef = useRef(null)
   const resolutionRefreshTimerRef = useRef(null)
   const wrappedDirtyRegionsRef = useRef([FULL_MAP_DIRTY, FULL_MAP_DIRTY])
@@ -130,8 +144,8 @@ export function useWrappedMapRenderer({
     )
     const targetWidth = Math.max(1, Math.round(baseCanvas.width * resolutionScale))
     const targetHeight = Math.max(1, Math.round(baseCanvas.height * resolutionScale))
-    const heightmapImage = heightmapImageRef.current
-    const riversImage = riversImageRef.current
+    const heightmapImage = heightmapLayerCanvasRef.current
+    const riversImage = riversLayerCanvasRef.current
     const wrappedMaps = [
       {
         canvas: leftWrappedCanvasRef.current,
@@ -167,6 +181,7 @@ export function useWrappedMapRenderer({
         targetCanvas: wrappedMap.canvas,
         targetHeight,
         targetWidth,
+        waterCanvas: waterCanvasRef.current,
       })
       wrappedDirtyRegionsRef.current[index] = null
     }
@@ -179,6 +194,7 @@ export function useWrappedMapRenderer({
     mapScrollRef,
     overlayCanvasRef,
     riversVisible,
+    waterCanvasRef,
     countryLayerCanvasRef,
   ])
 
@@ -205,6 +221,38 @@ export function useWrappedMapRenderer({
     },
     [queueWrappedMapRender],
   )
+
+  const handleHeightmapLoad = useCallback(() => {
+    if (!heightmapMaskRef.current) {
+      heightmapMaskRef.current = createRasterLayerMask(
+        heightmapImageRef.current,
+        'heightmap',
+      )
+    }
+
+    colorizeRasterLayer(
+      heightmapMaskRef.current,
+      heightmapColor,
+      heightmapLayerCanvasRef.current,
+    )
+    scheduleWrappedMapRender()
+  }, [heightmapColor, scheduleWrappedMapRender])
+
+  const handleRiversLoad = useCallback(() => {
+    if (!riversMaskRef.current) {
+      riversMaskRef.current = createRasterLayerMask(
+        riversImageRef.current,
+        'rivers',
+      )
+    }
+
+    colorizeRasterLayer(
+      riversMaskRef.current,
+      riversColor,
+      riversLayerCanvasRef.current,
+    )
+    scheduleWrappedMapRender()
+  }, [riversColor, scheduleWrappedMapRender])
 
   useEffect(() => {
     wrappedMapInvalidationRef.current = scheduleWrappedMapRender
@@ -237,6 +285,24 @@ export function useWrappedMapRenderer({
   useEffect(() => {
     scheduleWrappedMapRender()
   }, [heightmapVisible, riversVisible, scheduleWrappedMapRender])
+
+  useEffect(() => {
+    if (!heightmapMaskRef.current || !heightmapLayerCanvasRef.current) {
+      return
+    }
+
+    tintCanvasMask(heightmapLayerCanvasRef.current, heightmapColor)
+    scheduleWrappedMapRender()
+  }, [heightmapColor, scheduleWrappedMapRender])
+
+  useEffect(() => {
+    if (!riversMaskRef.current || !riversLayerCanvasRef.current) {
+      return
+    }
+
+    tintCanvasMask(riversLayerCanvasRef.current, riversColor)
+    scheduleWrappedMapRender()
+  }, [riversColor, scheduleWrappedMapRender])
 
   useEffect(() => {
     const scrollContainer = mapScrollRef.current
@@ -281,10 +347,13 @@ export function useWrappedMapRenderer({
   )
 
   return {
+    handleHeightmapLoad,
+    handleRiversLoad,
     heightmapImageRef,
+    heightmapLayerCanvasRef,
     leftWrappedCanvasRef,
     rightWrappedCanvasRef,
     riversImageRef,
-    scheduleWrappedMapRender,
+    riversLayerCanvasRef,
   }
 }

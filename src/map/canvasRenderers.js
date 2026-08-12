@@ -5,10 +5,10 @@ function getRgbKey(data, index) {
   return (data[index] << 16) | (data[index + 1] << 8) | data[index + 2]
 }
 
-export function createBlankMapImageData(sourceImageData, provinceByRgb) {
+export function createWaterMaskImageData(sourceImageData, provinceByRgb) {
   const { width, height, data } = sourceImageData
-  const blankImageData = new ImageData(width, height)
-  const output = blankImageData.data
+  const maskImageData = new ImageData(width, height)
+  const output = maskImageData.data
 
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
@@ -17,20 +17,15 @@ export function createBlankMapImageData(sourceImageData, provinceByRgb) {
       const province = provinceByRgb.get(rgb)
 
       if (isWater(province)) {
-        output[index] = 218
-        output[index + 1] = 233
-        output[index + 2] = 247
-      } else {
-        output[index] = 248
-        output[index + 1] = 250
-        output[index + 2] = 252
+        output[index] = 255
+        output[index + 1] = 255
+        output[index + 2] = 255
+        output[index + 3] = 255
       }
-
-      output[index + 3] = 255
     }
   }
 
-  return blankImageData
+  return maskImageData
 }
 
 export function createBorderImageData(sourceImageData, provinceByRgb, stateByProvince, borderMode) {
@@ -96,13 +91,15 @@ export function createBorderImageData(sourceImageData, provinceByRgb, stateByPro
   return borderImageData
 }
 
-export function drawBlankMap(baseCanvas, sourceImageData, provinceByRgb) {
-  if (!baseCanvas || !sourceImageData) {
+export function fillCanvasColor(canvas, color) {
+  if (!canvas?.width) {
     return
   }
 
-  const context = baseCanvas.getContext('2d', { willReadFrequently: true })
-  context.putImageData(createBlankMapImageData(sourceImageData, provinceByRgb), 0, 0)
+  const context = canvas.getContext('2d')
+  context.globalCompositeOperation = 'source-over'
+  context.fillStyle = color
+  context.fillRect(0, 0, canvas.width, canvas.height)
 }
 
 export function buildProvincePixelCache(sourceImageData, provinceByRgb) {

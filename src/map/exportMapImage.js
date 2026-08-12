@@ -1,4 +1,6 @@
 import { compositeMapLayers } from './mapLayerCompositor'
+import { DEFAULT_MAP_COLORS } from './mapAppearance'
+import { createColorizedRasterLayer } from './rasterLayerColorizer'
 
 const HEIGHTMAP_IMAGE_PATH = '/maps/base/bmp/heightmap.bmp'
 const RIVERS_IMAGE_PATH = '/maps/base/bmp/rivers.bmp'
@@ -43,7 +45,9 @@ export async function downloadRenderedMapPng({
   countryLayerCanvas,
   heightmapVisible,
   overlayCanvas,
+  rasterLayerColors = DEFAULT_MAP_COLORS,
   riversVisible,
+  waterCanvas,
 }) {
   if (!baseCanvas?.width || !baseCanvas.height) {
     throw new Error('내보낼 지도가 아직 준비되지 않았습니다.')
@@ -53,6 +57,16 @@ export async function downloadRenderedMapPng({
     heightmapVisible ? loadImage(HEIGHTMAP_IMAGE_PATH) : null,
     riversVisible ? loadImage(RIVERS_IMAGE_PATH) : null,
   ])
+  const heightmapLayer = heightmapImage
+    ? createColorizedRasterLayer(
+        heightmapImage,
+        'heightmap',
+        rasterLayerColors.heightmap,
+      )
+    : null
+  const riversLayer = riversImage
+    ? createColorizedRasterLayer(riversImage, 'rivers', rasterLayerColors.rivers)
+    : null
   const exportCanvas = document.createElement('canvas')
   const width = baseCanvas.width
   const height = baseCanvas.height
@@ -68,13 +82,14 @@ export async function downloadRenderedMapPng({
     borderCanvas,
     context,
     countryLayerCanvas,
-    heightmapSource: heightmapImage,
+    heightmapSource: heightmapLayer,
     heightmapVisible,
     overlayCanvas,
-    riversSource: riversImage,
+    riversSource: riversLayer,
     riversVisible,
     sourceRegion: fullMapRegion,
     targetRegion: fullMapRegion,
+    waterCanvas,
   })
 
   downloadBlob('map-render.png', await createPngBlob(exportCanvas))
